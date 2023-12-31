@@ -15,7 +15,7 @@ class SemanticInferenceConfig:
     """
         Configuration class for the semantic inference
     """
-    num_classes: int = field(default=3, metadata={"help": "Number of classes for the semantic inference"})
+    num_classes: int = 7
     """ Number of classes for the semantic inference """
 
     dataset_name: str = "get_pascal_8_labels"

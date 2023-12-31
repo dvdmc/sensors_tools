@@ -6,7 +6,7 @@ from sensors_tools.sensor import SensorConfig
 from .semantic_ros import SemanticNode
 
 if __name__ == '__main__':
-    rospy.init_node('sensor_node', anonymous=True)
+    rospy.init_node('semantic_node', anonymous=True)
     # Load dummy cfg
     cfg = SensorConfig()
     node = SemanticNode(cfg)

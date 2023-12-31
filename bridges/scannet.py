@@ -44,7 +44,7 @@ class ScanNetBridgeConfig(BridgeConfig):
     fov_h: float = 54.4
     """ Horizontal field of view """
 
-class ScanNet(BaseBridge):
+class ScanNetBridge(BaseBridge):
     """
         Bridge for Airsim
     """
@@ -154,7 +154,7 @@ class ScanNet(BaseBridge):
             label[np.where(label == 255)] = 0 #Remove the white contour
             label = cv2.resize(label, (640, 480), interpolation = cv2.INTER_NEAREST)
             label = label[:, 80:560]
-            data["semantic"] = label
+            data["semantic_gt"] = label
 
         if "depth" in self.cfg.data_types:
             # Load depth image (depth frames as 16-bit pngs (depth shift 1000))

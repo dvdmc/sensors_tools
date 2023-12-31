@@ -136,7 +136,7 @@ class AirsimBridge(BaseBridge):
                 np_rgb_airsim = img_rgb_airsim[:,:,::-1]
                 # Get the semantic image
                 semantic = airsim2class_id(np_rgb_airsim)
-                img_data["semantic"] = semantic
+                img_data["semantic_gt"] = semantic
 
         return img_data
     
