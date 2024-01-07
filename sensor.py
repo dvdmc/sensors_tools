@@ -42,10 +42,13 @@ def get_bridge(cfg: SensorConfig) -> BaseBridge:
     assert cfg.bridge_cfg is not None, "Bridge cfg must be specified"
 
     if cfg.bridge_type == "airsim":
+        assert isinstance(cfg.bridge_cfg, AirsimBridgeConfig), "Bridge cfg must be of type AirsimBridgeConfig"
         return AirsimBridge(cfg.bridge_cfg)
     elif cfg.bridge_type == "scannet":
+        assert isinstance(cfg.bridge_cfg, ScanNetBridgeConfig), "Bridge cfg must be of type ScanNetBridgeConfig"
         return ScanNetBridge(cfg.bridge_cfg)
     elif cfg.bridge_type == "ros":
+        assert isinstance(cfg.bridge_cfg, ROSBridgeConfig), "Bridge cfg must be of type ROSBridgeConfig"
         return ROSBridge(cfg.bridge_cfg)
     else:
         raise NotImplementedError("Bridge type not implemented")

@@ -6,16 +6,13 @@ from typing import List, Literal
 from PIL import Image
 import numpy as np
 import cv2
-from cv_bridge import CvBridge
 
-import airsim #type: ignore
+from base_bridge import BaseBridge, BridgeConfig
 
-from bridges.base_bridge import BaseBridge, BridgeConfig
-
-ScanNetSensorDataTypes = Literal["rgb", "depth", "semantic", "poses"]
+ScanNetSensorDataTypes = Literal["rgb", "depth", "semantic", "pose"]
 """
     List of sensor data to query.
-    - "poses": query poses.
+    - "pose": query poses.
     - "rgb": query rgb images.
     - "depth": query depth images.
     - "semantic": query semantic images.
@@ -41,8 +38,6 @@ class ScanNetBridgeConfig(BridgeConfig):
     height: float = 512
     """ Image height """
 
-    fov_h: float = 54.4
-    """ Horizontal field of view """
 
 class ScanNetBridge(BaseBridge):
     """
@@ -60,22 +55,20 @@ class ScanNetBridge(BaseBridge):
             Setup the bridge
         """
         # Data acquisition configuration
-        self.bridge = CvBridge()
         self.static_tf = []
         print("Dataset path: ", self.cfg.dataset_path)
         self.seq_n = 1
         self.each_n_frame = self.cfg.downsampling_factor_dataset
-        self.data_length = len(os.listdir(self.dataset_path + '/color/'))
+        self.data_length = len(os.listdir(self.cfg.dataset_path / "color"))
         print("Sequence length: ", self.data_length)
         print("Each n frame: ", self.each_n_frame)
         
         # Sim config data TODO: Move to config file
         #######################################################
         # RELEVANT CAMERA DATA
-        self.size_v0 = 512
 
         # Get camera from the textfile "sequence_name.txt" inside the dataset folder
-        sequence_data_file = open(self.dataset_path + "sequence_name.txt", "r")
+        sequence_data_file = open(self.cfg.dataset_path / "sequence_name.txt", "r")
         sequence_data = sequence_data_file.readlines()
         sequence_data_file.close()
 
@@ -108,15 +101,6 @@ class ScanNetBridge(BaseBridge):
 
         #######################################################
 
-        # Set the data to query
-        self.query_data = []
-        if "rgb" in self.cfg.data_types:
-            self.query_data.append(airsim.ImageRequest("0", airsim.ImageType.Scene, False, False))
-        if "depth" in self.cfg.data_types:
-            self.query_data.append(airsim.ImageRequest("0", airsim.ImageType.DepthPerspective, True, False))
-        if "semantic" in self.cfg.data_types:
-            self.query_data.append(airsim.ImageRequest("0", airsim.ImageType.Segmentation, False, False))
-
     def remap_NYU_classes(self, label_40):
         label_13 = np.zeros_like(label_40)
         for key, value in self.remapping_40_to_13_classes.items():
@@ -139,7 +123,7 @@ class ScanNetBridge(BaseBridge):
 
         if "rgb" in self.cfg.data_types:
             # Load RGB image
-            img_path = self.cfg.dataset_path + '/color/' + str(self.seq_n) + '.jpg'
+            img_path = self.cfg.dataset_path / "color" / f"{self.seq_n}.jpg"
             # Open image as a np array
             img = (Image.open(img_path)).convert('RGB')
             img = img.resize((640, 480)) #Resize to match the depth image
@@ -148,7 +132,7 @@ class ScanNetBridge(BaseBridge):
         
         if "semantic" in self.cfg.data_types:
             # Load GT label
-            label_path = self.cfg.dataset_path + '/label/' + str(self.seq_n) + '.png'
+            label_path = self.cfg.dataset_path / "label" / f"{self.seq_n}.png"
             label = np.array(Image.open(label_path))
             label = self.remap_ScanNet_to_13_classes(label)
             label[np.where(label == 255)] = 0 #Remove the white contour
@@ -158,7 +142,7 @@ class ScanNetBridge(BaseBridge):
 
         if "depth" in self.cfg.data_types:
             # Load depth image (depth frames as 16-bit pngs (depth shift 1000))
-            depth_path = self.cfg.dataset_path + '/depth/' + str(self.seq_n) + '.png'
+            depth_path = self.cfg.dataset_path / "depth" / f"{self.seq_n}.png"
             depth = np.array(Image.open(depth_path))
             depth = (depth/1000).astype(np.float32)
             depth = depth[:, 80:560]
@@ -172,9 +156,9 @@ class ScanNetBridge(BaseBridge):
             Get data from the bridge
         """
         data = {}
-        if "poses" in self.cfg.data_types:
-            pose_path = self.dataset_path + "/pose/" + str(self.seq_n) + ".txt"
-            data["poses"] = np.loadtxt(pose_path)
+        if "pose" in self.cfg.data_types:
+            pose_path = self.cfg.dataset_path / "pose" / f"{self.seq_n}.txt"
+            data["pose"] = np.loadtxt(pose_path)
 
         img_data = self.open_images()
 

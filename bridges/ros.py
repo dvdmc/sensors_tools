@@ -13,7 +13,7 @@ from airsim_tools.semantics import airsim2class_id
 
 from bridges.base_bridge import BaseBridge, BridgeConfig
 
-ROSSensorDataTypes = Literal["rgb", "poses"]
+ROSSensorDataTypes = Literal["rgb", "pose"]
 """
     List of sensor data to query.
     - "poses": query poses.
@@ -27,7 +27,7 @@ class ROSBridgeConfig(BridgeConfig):
     """
         Configuration class for AirsimBridge
     """
-    data_types: List[ROSSensorDataTypes] = field(default_factory=list, metadata={"default": ["rgb", "poses"]})
+    data_types: List[ROSSensorDataTypes] = field(default_factory=list, metadata={"default": ["rgb", "pose"]})
     """ Data types to query """
 
     rgb_topic: str = "/camera/rgb/image_raw"
@@ -38,6 +38,15 @@ class ROSBridgeConfig(BridgeConfig):
 
     poses_tf: str = "/camera/base_link"
     """ Poses frame to query """
+
+    width: float = 512
+    """ Image width """
+
+    height: float = 512
+    """ Image height """
+
+    fov_h: float = 54.4
+    """ Horizontal field of view """
 
 class ROSBridge(BaseBridge):
     """
@@ -64,7 +73,7 @@ class ROSBridge(BaseBridge):
         # TF listener
         self.tf_listener = tf2_ros.TransformListener()
 
-        # Sim config data TODO: Obtain from camera data
+        # Sim config data TODO: Obtain from camera_data topic in the future
         #######################################################
         # RELEVANT CAMERA DATA
         self.width = self.cfg.width
@@ -93,7 +102,7 @@ class ROSBridge(BaseBridge):
         if "rgb" in self.cfg.data_types:
             data["rgb"] = self.rgb
 
-        if "poses" in self.cfg.data_types:
-            data["poses"] = self.pose
+        if "pose" in self.cfg.data_types:
+            data["pose"] = self.pose
             
         return data

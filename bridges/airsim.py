@@ -11,10 +11,10 @@ from airsim_tools.semantics import airsim2class_id
 
 from bridges.base_bridge import BaseBridge, BridgeConfig
 
-AirsimSensorDataTypes = Literal["rgb", "depth", "semantic", "poses"]
+AirsimSensorDataTypes = Literal["rgb", "depth", "semantic", "pose"]
 """
     List of sensor data to query.
-    - "poses": query poses.
+    - "pose": query poses.
     - "rgb": query rgb images.
     - "depth": query depth images.
     - "semantic": query semantic images.
@@ -25,7 +25,7 @@ class AirsimBridgeConfig(BridgeConfig):
     """
         Configuration class for AirsimBridge
     """
-    data_types: List[AirsimSensorDataTypes] = field(default_factory=list, metadata={"default": ["rgb", "poses"]})
+    data_types: List[AirsimSensorDataTypes] = field(default_factory=list, metadata={"default": ["rgb", "pose"]})
     """ Data types to query """
 
     semantic_config: List[tuple] = field(default_factory=list, metadata={"default": []})
@@ -145,9 +145,9 @@ class AirsimBridge(BaseBridge):
             Get data from the bridge
         """
         data = {}
-        if "poses" in self.cfg.data_types:
-            poses = self.client.simGetVehiclePose()
-            data["poses"] = poses
+        if "pose" in self.cfg.data_types:
+            pose = self.client.simGetVehiclePose()
+            data["pose"] = pose
 
         responses = self.client.simGetImages(self.query_data)
         img_data = self.process_img_responses(responses)
