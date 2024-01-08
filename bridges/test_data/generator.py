@@ -57,41 +57,42 @@ def generate_data(num: int) -> tuple:
 
     return img, depth, semantic, semantic_rgb, pose
 
-def generate_chair_img(num: int) -> tuple:
+def generate_sheeps_img(num: int) -> tuple:
     """
-    Generate the images for the "chair.jpg" image and the "chair_sem.png" semantic image
-    Instead of the number, use the chair and use the chair_sem.png with red rgb color for the gt
+    Generate the images for the "sheeps.png" image and the "sheeps_sem.png" semantic image
+    Instead of the number, use the sheeps and use the sheeps_sem.png with red rgb color for the gt
     mask.
     """
     # Generate the rgb image
     img = np.zeros((HEIGHT, WIDTH, 3), np.uint8)
     img.fill(255)
 
-    # Load the chair image
-    chair = cv2.imread("chair.jpg")
-    # Resize the chair image to HEIGHT//2 and keep the aspect ratio
-    scale = HEIGHT//2 / chair.shape[0]
-    chair = cv2.resize(chair, (0,0), fx=scale, fy=scale)
+    # Load the sheeps image
+    sheeps = cv2.imread("sheeps.png")
+    # Resize the sheeps image to HEIGHT//2 and keep the aspect ratio
+    scale = HEIGHT//2 / sheeps.shape[0]
+    sheeps = cv2.resize(sheeps, (0,0), fx=scale, fy=scale)
 
-    # Put the chair in the center
-    x_offset = WIDTH//2 - chair.shape[1]//2
-    y_offset = HEIGHT//2 - chair.shape[0]//2
+    # Put the sheeps in the center
+    x_offset = WIDTH//2 - sheeps.shape[1]//2
+    y_offset = HEIGHT//2 - sheeps.shape[0]//2
     #pdb.set_trace()
-    img[y_offset:y_offset+chair.shape[0], x_offset:x_offset+chair.shape[1]] = chair
+    img[y_offset:y_offset+sheeps.shape[0], x_offset:x_offset+sheeps.shape[1]] = sheeps
 
 
     # Generate the depth image
     depth = np.zeros((HEIGHT, WIDTH), np.float32)
     depth.fill(10*1000)
-    mask = img[:,:,0] == 0
+    mask = img[:,:,0] != 255
     depth[mask] = 3*1000
 
     # Generate the semantic image
     # Load the semantic image
-    semantic_img = cv2.imread("chair_sem.png")
+    semantic_img = cv2.imread("sheeps_sem.png")
+    
     # Resize the semantic image to HEIGHT//2 and keep the aspect ratio
     scale = HEIGHT//2 / semantic_img.shape[0]
-    semantic_img = cv2.resize(semantic_img, (0,0), fx=scale, fy=scale)
+    semantic_img = cv2.resize(semantic_img, (0,0), fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST)
 
     semantic = np.zeros((HEIGHT, WIDTH), np.uint16)
 
@@ -100,8 +101,10 @@ def generate_chair_img(num: int) -> tuple:
     # Put the semantic image in the center
     semantic_rgb[y_offset:y_offset+semantic_img.shape[0], x_offset:x_offset+semantic_img.shape[1]] = semantic_img
     # Get the mask
-    mask = semantic_rgb[:,:,0] == 255
-    semantic[mask] = 1
+    mask_sheep = semantic_rgb[:,:,2] == 47
+    mask_human = semantic_rgb[:,:,2] == 53
+    semantic[mask_sheep] = 17
+    semantic[mask_human] = 15
 
     # Generate the pose file
     pose = np.zeros((4,4))
@@ -120,16 +123,16 @@ if __name__ == "__main__":
     # Generate the data
     for i in range(NUM_IMAGES):
         if i == 0:
-            img, depth, semantic, semantic_rgb, pose = generate_chair_img(i)
+            img, depth, semantic, semantic_rgb, pose = generate_sheeps_img(i)
         else:
             img, depth, semantic, semantic_rgb, pose = generate_data(i)
 
-        # Save the images
         cv2.imwrite(f"dataset/color/{i:04d}.png", img)
         # Save depth as 16-bit png (depth shift 1000)
         cv2.imwrite(f"dataset/depth/{i:04d}.png", depth.astype(np.uint16))
         cv2.imwrite(f"dataset/label/{i:04d}.png", semantic)
-        cv2.imwrite(f"dataset/label_rgb/{i:04d}.png", semantic_rgb)
+        # Save the images with no compression in label
+        cv2.imwrite(f"dataset/label_rgb/{i:04d}.png", semantic_rgb, [cv2.IMWRITE_PNG_COMPRESSION, 0])
         # Save the pose
         np.savetxt(f"dataset/pose/{i:04d}.txt", pose)
 

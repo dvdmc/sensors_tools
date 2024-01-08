@@ -2,8 +2,8 @@ from dataclasses import dataclass
 import numpy as np
 import torch
 
-from sensors_tools.utils.semantics_utils import get_color_map
-from sensors_tools.inference.semantic import SemanticInference, SemanticInferenceConfig
+from utils.semantics_utils import get_color_map
+from inference.semantic import SemanticInference, SemanticInferenceConfig
 
 @dataclass
 class SemanticMCDInferenceConfig(SemanticInferenceConfig):
@@ -17,7 +17,6 @@ class SemanticMCDInference(SemanticInference):
     def __init__(self, cfg: SemanticMCDInferenceConfig):
         super().__init__(cfg)
         self.cfg = cfg
-        self.setup()
 
     def setup(self):
         super().setup()

@@ -9,12 +9,12 @@ from pathlib import Path
 from matplotlib import pyplot as plt
 import numpy as np
 from sensor import SensorConfig, SemanticInferenceSensor
-from bridges import TestBridgeConfig
+from bridges.test_bridge import TestBridgeConfig
 from inference.semantic import SemanticInferenceConfig
 
 if __name__ == '__main__':
     # Setup the sensor
-    bridge_cfg = TestBridgeConfig(data_types=["rgb", "semantic"], dataset_path=Path("./test_data/dataset/"), width=512, height=512)
+    bridge_cfg = TestBridgeConfig(data_types=["rgb", "semantic", "depth", "pose"], dataset_path=Path("./bridges/test_data/dataset/"), width=512, height=512)
     sem_cfg = SemanticInferenceConfig(num_classes=21)
     cfg = SensorConfig(
         bridge_cfg = bridge_cfg,
@@ -39,7 +39,7 @@ if __name__ == '__main__':
         ax[1].set_title("Depth")
 
         ax[2].imshow(data["semantic_gt"])
-        ax[2].set_title("Semantic")
+        ax[2].set_title("Semantic GT")
 
         ax[3].imshow(data["semantic"])
         ax[3].set_title("Semantic pred")

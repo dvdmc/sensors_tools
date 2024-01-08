@@ -12,7 +12,7 @@ from test_bridge import TestBridge, TestBridgeConfig
 
 if __name__ == '__main__':
     config = TestBridgeConfig()
-    config.data_types = ["rgb", "depth", "semantic", "poses"]
+    config.data_types = ["rgb", "depth", "semantic", "pose"]
     config.dataset_path = Path("./test_data/dataset/")
     config.width = 512
     config.height = 512

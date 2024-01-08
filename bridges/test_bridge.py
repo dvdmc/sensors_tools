@@ -14,10 +14,10 @@ import numpy as np
 
 from .base_bridge import BaseBridge, BaseBridgeConfig
 
-TestSensorDataTypes = Literal["rgb", "depth", "semantic", "poses"]
+TestSensorDataTypes = Literal["rgb", "depth", "semantic", "pose"]
 """
     List of sensor data to query.
-    - "poses": query poses.
+    - "pose": query pose.
     - "rgb": query rgb images.
     - "depth": query depth images.
     - "semantic": query semantic images.
@@ -28,7 +28,7 @@ class TestBridgeConfig(BaseBridgeConfig):
     """
         Configuration class for Test
     """
-    data_types: List[TestSensorDataTypes] = field(default_factory=list, metadata={"default": ["rgb", "poses"]})
+    data_types: List[TestSensorDataTypes] = field(default_factory=list, metadata={"default": ["rgb", "pose"]})
     """ Data types to query """
 
     dataset_path: Path = Path("./test_data/")
@@ -52,6 +52,7 @@ class TestBridge(BaseBridge):
         super().__init__(cfg)
         self.cfg = cfg
 
+    
     def setup(self):
         """
             Setup the bridge
@@ -74,6 +75,7 @@ class TestBridge(BaseBridge):
         print("Camera data: ", camera_data)
         #######################################################
     
+
     def open_images(self):
         """
         Open the images from the dataset folder
@@ -109,19 +111,20 @@ class TestBridge(BaseBridge):
             Get data from the bridge
         """
         data = {}
-        if "poses" in self.cfg.data_types:
+        if "pose" in self.cfg.data_types:
             pose_path = self.cfg.dataset_path / "pose" / f"{self.seq_n:04d}.txt"
             data["pose"] = np.loadtxt(pose_path)
 
         img_data = self.open_images()
 
         data.update(img_data)
-        
+
         # Assume seq advances (TODO: Figure out what to do in general for datasets)
         self.increment_seq()
 
         return data
     
+
     def increment_seq(self):
         """
             Increment the sequence number

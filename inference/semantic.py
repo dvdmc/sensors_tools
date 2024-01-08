@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
+from matplotlib import pyplot as plt
 
 import numpy as np
 import torch
@@ -8,9 +9,8 @@ from PIL import Image
 
 from torchvision import transforms
 from torchvision.models.segmentation.deeplabv3 import deeplabv3_resnet50
-from torchvision.models.segmentation import DeepLabV3_ResNet50_Weights
 
-from sensors_tools.utils.semantics_utils import get_color_map, label2rgb
+from utils.semantics_utils import get_color_map, label2rgb
 
 @dataclass
 class SemanticInferenceConfig:
@@ -35,25 +35,26 @@ class SemanticInferenceConfig:
 class SemanticInference:
     def __init__(self, cfg: SemanticInferenceConfig):
         self.cfg = cfg
-        self.setup()
 
     def setup(self):
 
         # NN configuration
         self.gpu_device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
-        # Load the pretrained model TODO: Optional pretrain?
-        if self.cfg.pretrained_model_path is not None:
-            pretrained_model = torch.load(self.cfg.pretrained_model_path)
-        else:
-            pretrained_model = DeepLabV3_ResNet50_Weights()
-
         # Get the color map
         self.color_map = get_color_map(self.cfg.labels_name, bgr=True)
 
         # Setup the semantic inference model
-        self.model = self.model = deeplabv3_resnet50(num_classes=self.cfg.num_classes)
-        self.model.load_state_dict(pretrained_model['model_state_dict'], strict = False)
+        # Load the pretrained model TODO: Optional pretrain?
+        if self.cfg.pretrained_model_path is not None:
+            pretrained_model = torch.load(self.cfg.pretrained_model_path)
+            self.model = self.model = deeplabv3_resnet50(num_classes=self.cfg.num_classes)
+            self.model.load_state_dict(pretrained_model['model_state_dict'])
+        else:
+            self.model = deeplabv3_resnet50(num_classes=self.cfg.num_classes, weights='DEFAULT')
+            print("Loaded pretrained model")
+
+        self.model.to(self.gpu_device)
         self.model.eval()
     
         self.transform_img = transforms.Compose([transforms.ToTensor(),
@@ -94,7 +95,8 @@ class SemanticInference:
         img_out = Image.alpha_composite(input_alpha_image, r)
         return img_out
 
-    def get_prediction(self, img: torch.Tensor) -> tuple:
+    # TODO: Debug this
+    def get_prediction(self, img: Image.Image) -> tuple:
         """
             Get the prediction from the model assuming it is deterministic
             Args:
@@ -103,17 +105,21 @@ class SemanticInference:
                 probs: probability vectors from the model
                 img_out: image with the prediction
         """
-        img = self.transform_img(img)
-        img = img.unsqueeze(0)
-        img = img.to(self.gpu_device)
+        img_t: torch.Tensor = self.transform_img(img)
+        # Change order to C,W,H
+        img_t = img_t.unsqueeze(0)
+        img_t = img_t.to(self.gpu_device)
         with torch.no_grad():
-            output_logs = self.model(img)
+            output_logs = self.model(img_t)['out'][0]
             probs = self.softmax(output_logs)
 
-        probs_np = probs.numpy()
-        img_out = self.overlay_label_rgb(probs_np, img)
-    
-        return probs, img_out
+        probs_np = probs.cpu().numpy()
+        pred = np.argmax(probs_np, axis=0)
+        img_np = np.array(img)
+        img_out = self.overlay_label_rgb(pred, img_np)
+        plt.imshow(pred)
+        plt.show()
+        return pred, img_out
     
 
     
