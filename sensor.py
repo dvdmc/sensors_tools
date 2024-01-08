@@ -1,22 +1,20 @@
 from dataclasses import dataclass, field
 from typing import Literal, Optional, Union
 
-from sensors_tools.bridges.base_bridge import BaseBridge, BridgeConfig
-from sensors_tools.bridges.airsim import AirsimBridge, AirsimBridgeConfig
-from phd_utils.sensors_tools.bridges.ros import ROSBridge, ROSBridgeConfig
-from phd_utils.sensors_tools.bridges.scannet import ScanNetBridge, ScanNetBridgeConfig
-from sensors_tools.inference.semantic import SemanticInferenceConfig, SemanticInference
-from sensors_tools.inference.semantic_mcd import SemanticMCDInference, SemanticMCDInferenceConfig
+from bridges import BridgeConfig, BridgeType, get_bridge
+
+from inference.semantic import SemanticInferenceConfig, SemanticInference
+from inference.semantic_mcd import SemanticMCDInference, SemanticMCDInferenceConfig
 
 @dataclass
 class SensorConfig:
     """
         Configuration class for DeterministicSensor
     """
-    bridge_cfg: Union[AirsimBridgeConfig, ScanNetBridgeConfig, ROSBridgeConfig] = field(default_factory=AirsimBridgeConfig, metadata={"default": AirsimBridgeConfig()})
+    bridge_cfg: BridgeConfig
     """ Bridge configuration """
 
-    bridge_type: Literal["airsim"] = "airsim"
+    bridge_type: BridgeType
     """ Type of bridge to be used """
 
     inference_cfg: Optional[SemanticInferenceConfig | SemanticMCDInferenceConfig] = field(default_factory=SemanticInferenceConfig, metadata={"default": SemanticInferenceConfig()})
@@ -36,22 +34,6 @@ def get_semantic_inference_model(cfg: SensorConfig) -> SemanticInference:
         return SemanticMCDInference(cfg.inference_cfg)
     else:
         raise NotImplementedError("Inference type not implemented")
-
-def get_bridge(cfg: SensorConfig) -> BaseBridge:
-    assert cfg.bridge_type is not None, "Bridge type must be specified"
-    assert cfg.bridge_cfg is not None, "Bridge cfg must be specified"
-
-    if cfg.bridge_type == "airsim":
-        assert isinstance(cfg.bridge_cfg, AirsimBridgeConfig), "Bridge cfg must be of type AirsimBridgeConfig"
-        return AirsimBridge(cfg.bridge_cfg)
-    elif cfg.bridge_type == "scannet":
-        assert isinstance(cfg.bridge_cfg, ScanNetBridgeConfig), "Bridge cfg must be of type ScanNetBridgeConfig"
-        return ScanNetBridge(cfg.bridge_cfg)
-    elif cfg.bridge_type == "ros":
-        assert isinstance(cfg.bridge_cfg, ROSBridgeConfig), "Bridge cfg must be of type ROSBridgeConfig"
-        return ROSBridge(cfg.bridge_cfg)
-    else:
-        raise NotImplementedError("Bridge type not implemented")
     
 class SemanticInferenceSensor:
     def __init__(self, cfg: SensorConfig):
@@ -60,7 +42,7 @@ class SemanticInferenceSensor:
 
     def setup(self):
         # Setup the bridge
-        self.bridge = get_bridge(self.cfg)
+        self.bridge = get_bridge(self.cfg.bridge_type, self.cfg.bridge_cfg)
         self.bridge.setup()
 
         # Setup the inference models

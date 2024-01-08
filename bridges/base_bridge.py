@@ -3,7 +3,7 @@ from typing import List, Literal
 from abc import ABC, abstractmethod
 
 @dataclass
-class BridgeConfig:
+class BaseBridgeConfig:
     """
         Base class for bridge configuration
     """

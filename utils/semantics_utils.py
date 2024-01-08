@@ -22,7 +22,7 @@ def get_color_map(dataset_name: str, bgr: bool = True) -> np.ndarray:
         Returns:
             color_map: color map for the dataset
     """
-    if dataset_name == "pascal":
+    if dataset_name == "coco_voc":
         color_map = get_pascal_labels(bgr=bgr)
     elif dataset_name == "nyu2":
         color_map = get_nyu2_40_labels(bgr=bgr)
@@ -358,7 +358,7 @@ def class_to_rgb(class_image, class_colors):
 def label2rgb(label_map, label_colors): # Not related to sent info, only display
     num_classes = label_colors.shape[0]
     label_colors = label_colors[:num_classes, :]
-    rgb_label_map = utils.class_to_rgb(label_map, label_colors)
+    rgb_label_map = class_to_rgb(label_map, label_colors)
 
     return rgb_label_map
 
@@ -366,5 +366,5 @@ def rgb2label(self, rgb_label_map, label_colors):
     num_classes = label_colors.shape[0]
     label_colors = label_colors[:num_classes, :]
     # Save img
-    label_map = utils.rgb_to_class(rgb_label_map, label_colors)
+    label_map = rgb_to_class(rgb_label_map, label_colors)
     return label_map

@@ -1,4 +1,6 @@
 from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Optional
 
 import numpy as np
 import torch
@@ -18,10 +20,10 @@ class SemanticInferenceConfig:
     num_classes: int = 7
     """ Number of classes for the semantic inference """
 
-    dataset_name: str = "get_pascal_8_labels"
-    """ Dataset name to obtain the label map """
+    labels_name: str = "coco_voc"
+    """ Name reference the label map (dataset or modified map: coco, coco_voc) """
 
-    pretrained_model_path: str = field(default="deeplabv3_resnet50_ade20k-c79401a0.pth", metadata={"help": "Path to the pretrained model"})
+    pretrained_model_path: Optional[Path] = None
     """ Path to the pretrained model """
 
     width: int = 512
@@ -47,7 +49,7 @@ class SemanticInference:
             pretrained_model = DeepLabV3_ResNet50_Weights()
 
         # Get the color map
-        self.color_map = get_color_map(self.cfg.dataset_name, bgr=True)
+        self.color_map = get_color_map(self.cfg.labels_name, bgr=True)
 
         # Setup the semantic inference model
         self.model = self.model = deeplabv3_resnet50(num_classes=self.cfg.num_classes)

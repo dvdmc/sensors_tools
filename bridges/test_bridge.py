@@ -12,7 +12,7 @@ from typing import List, Literal
 from PIL import Image
 import numpy as np
 
-from base_bridge import BaseBridge, BridgeConfig
+from .base_bridge import BaseBridge, BaseBridgeConfig
 
 TestSensorDataTypes = Literal["rgb", "depth", "semantic", "poses"]
 """
@@ -24,7 +24,7 @@ TestSensorDataTypes = Literal["rgb", "depth", "semantic", "poses"]
 """
 
 @dataclass
-class TestBridgeConfig(BridgeConfig):
+class TestBridgeConfig(BaseBridgeConfig):
     """
         Configuration class for Test
     """
@@ -116,6 +116,9 @@ class TestBridge(BaseBridge):
         img_data = self.open_images()
 
         data.update(img_data)
+        
+        # Assume seq advances (TODO: Figure out what to do in general for datasets)
+        self.increment_seq()
 
         return data
     

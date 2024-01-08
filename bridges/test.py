@@ -13,7 +13,7 @@ from test_bridge import TestBridge, TestBridgeConfig
 if __name__ == '__main__':
     config = TestBridgeConfig()
     config.data_types = ["rgb", "depth", "semantic", "poses"]
-    config.dataset_path = Path("./test_data/")
+    config.dataset_path = Path("./test_data/dataset/")
     config.width = 512
     config.height = 512
 
@@ -42,5 +42,3 @@ if __name__ == '__main__':
         plt.draw()
         plt.pause(0.001)
         input("Press [enter] to continue.")
-
-        bridge.increment_seq()

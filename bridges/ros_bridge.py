@@ -11,7 +11,7 @@ import airsim #type: ignore
 from airsim_tools.depth_conversion import depth_conversion
 from airsim_tools.semantics import airsim2class_id
 
-from bridges.base_bridge import BaseBridge, BridgeConfig
+from bridges.base_bridge import BaseBridge, BaseBridgeConfig
 
 ROSSensorDataTypes = Literal["rgb", "pose"]
 """
@@ -23,7 +23,7 @@ ROSSensorDataTypes = Literal["rgb", "pose"]
 """
 
 @dataclass
-class ROSBridgeConfig(BridgeConfig):
+class ROSBridgeConfig(BaseBridgeConfig):
     """
         Configuration class for AirsimBridge
     """
