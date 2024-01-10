@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>sensors_tools_ros</name>
+  <version>0.0.1</version>
+  <description>Sensors tools for conversion and inference</description>
+  <maintainer email="davidmc@unizar.es">David Morilla-Cabello</maintainer>
+
+  <!-- One license tag required, multiple allowed, one license per tag -->
+  <!-- Commonly used license strings: -->
+  <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
+  <license>TODO</license>
+
+  <url type="repository">https://github.com/dvdmc/sensors_tools</url>
+
+  <author email="davidmc@unizar.es">David Morilla-Cabello</author>
+
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>rospy</depend>
+  <depend>sensor_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>tf2_ros</depend>
+  <depend>std_srvs</depend>
+  <depend>cv_bridge</depend>
+  <depend>tf_conversions</depend>
+
+</package>

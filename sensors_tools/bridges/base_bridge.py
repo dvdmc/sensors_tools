@@ -37,3 +37,12 @@ class BaseBridge(ABC):
             Get data from the bridge
         """
         pass
+
+    def move(self) -> None:
+        """
+            Apply a movement to the bridge
+            This function should be used when the bridge
+            controls the movement of the sensor as in
+            sequence datasets
+        """
+        print("Move not implemented for this bridge")

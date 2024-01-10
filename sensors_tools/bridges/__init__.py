@@ -3,6 +3,7 @@
 # This file manages the bridges module.
 #
 ###
+from dataclasses import fields
 from typing import Literal, Union, TYPE_CHECKING
 
 # We use dynamic imports to avoid not used requirements.
@@ -16,9 +17,31 @@ if TYPE_CHECKING:
     from .test_bridge import TestBridge, TestBridgeConfig
 
 BridgeConfig = Union['ScanNetBridgeConfig', 'TestBridgeConfig', 'AirsimBridgeConfig', 'ROSBridgeConfig']
+
 BridgeType = Literal["airsim", "ros", "scannet", "test"]
+
+ControllableBridges = ["scannet", "test"] # Bridges that can be controlled by the sensor
+
 Bridges = Union['ScanNetBridge', 'TestBridge', 'AirsimBridge', 'ROSBridge']
 
+def get_bridge_config(bridge_type: BridgeType):
+    assert bridge_type is not None, "Bridge type must be specified"
+
+    if bridge_type == "airsim":
+        from .airsim_bridge import AirsimBridgeConfig
+        return AirsimBridgeConfig
+    elif bridge_type == "scannet":
+        from .scannet_bridge import ScanNetBridgeConfig
+        return ScanNetBridgeConfig
+    elif bridge_type == "ros":
+        from .ros_bridge import ROSBridgeConfig
+        return ROSBridgeConfig
+    elif bridge_type == "test":
+        from .test_bridge import TestBridgeConfig
+        return TestBridgeConfig
+    else:
+        raise NotImplementedError("Bridge type not implemented")
+    
 def get_bridge(bridge_type: BridgeType, bridge_cfg: BridgeConfig) -> Bridges:
     assert bridge_type is not None, "Bridge type must be specified"
     assert bridge_cfg is not None, "Bridge cfg must be specified"
@@ -41,4 +64,3 @@ def get_bridge(bridge_type: BridgeType, bridge_cfg: BridgeConfig) -> Bridges:
         return TestBridge(bridge_cfg)
     else:
         raise NotImplementedError("Bridge type not implemented")
-    

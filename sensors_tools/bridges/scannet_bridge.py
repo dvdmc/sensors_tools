@@ -6,6 +6,8 @@ from typing import List, Literal
 from PIL import Image
 import numpy as np
 import cv2
+import pandas as pd
+from scipy.spatial.transform import Rotation
 
 from sensors_tools.base.cameras import CameraInfo
 
@@ -34,10 +36,10 @@ class ScanNetBridgeConfig(BaseBridgeConfig):
     downsampling_factor_dataset: int = 20
     """ Downsampling factor for the dataset. Or how many images are there in between images. """
     
-    width: float = 512
+    width: int = 512
     """ Image width """
 
-    height: float = 512
+    height: int = 512
     """ Image height """
 
 
@@ -103,6 +105,17 @@ class ScanNetBridge(BaseBridge):
         self.camera_info = CameraInfo(cx=self.cx_color, cy=self.cy_color, fx=self.fx_color, fy=self.fy_color, width=self.cfg.width, height=self.cfg.height)
         self.camera_info_depth = CameraInfo(cx=self.cx_depth, cy=self.cy_depth, fx=self.fx_depth, fy=self.fy_depth, width=self.cfg.width, height=self.cfg.height)
         #######################################################
+        self.tsv_file = '/home/david/dataset/scannetv2-labels.combined.tsv' # TODO: Fix
+        label_mapping = pd.read_csv(self.tsv_file, sep='\t')
+        NYU_classes = label_mapping['nyu40id'].values
+        id_classes = label_mapping['id'].values
+        self.remap_to_NYU_classes = {id_classes[i]: NYU_classes[i].astype(int) for i in range(len(NYU_classes))}
+        self.remapping_40_to_13_classes = {0: 0, 1:12, 2:5, 3:6, 4:1, 5:4, 6:9, 7:10, 8:12, 9:13, 10:6, 11:8, 12:6, 
+                                    13:13, 14:10, 15:6, 16:13, 17:6, 18:7, 19:7, 20:5, 21:7, 22:3, 23:2, 24:6,
+                                    25:11, 26:7, 27:7, 28:7, 29:7, 30:7, 31:7, 32:6, 33:7, 34:7, 35:7, 36:7,
+                                    37:7, 38:7, 39:6, 40:7}
+        
+
 
     def remap_NYU_classes(self, label_40):
         label_13 = np.zeros_like(label_40)
@@ -161,7 +174,10 @@ class ScanNetBridge(BaseBridge):
         data = {}
         if "pose" in self.cfg.data_types:
             pose_path = self.cfg.dataset_path / "pose" / f"{self.seq_n}.txt"
-            data["pose"] = np.loadtxt(pose_path)
+            translation_matrix = np.loadtxt(pose_path)
+            translation = translation_matrix[:3, 3]
+            rotation = Rotation.from_matrix(translation_matrix[:3, :3])
+            data["pose"] = (translation, rotation)
 
         img_data = self.open_images()
 

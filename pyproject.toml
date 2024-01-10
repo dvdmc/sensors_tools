@@ -1,12 +1,21 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "sensors_tools"
+authors = [{name = "David Morilla-Cabello", email = "davidmc@unizar.es"}]
+readme="README.md"
+requires-python=">=3.7.0"
 version = "0.1.0"
-
 dependencies=[
     "numpy",
     "matplotlib",
     "Pillow",
 ]
+
+[tool.setuptools]
+packages = ["sensors_tools"]
 
 # black
 [tool.black]

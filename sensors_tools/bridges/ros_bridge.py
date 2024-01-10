@@ -40,10 +40,10 @@ class ROSBridgeConfig(BaseBridgeConfig):
     poses_tf: str = "/camera/base_link"
     """ Poses frame to query """
 
-    width: float = 512
+    width: int = 512
     """ Image width """
 
-    height: float = 512
+    height: int = 512
     """ Image height """
 
     fov_h: float = 54.4

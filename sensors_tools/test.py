@@ -42,7 +42,7 @@ if __name__ == '__main__':
         ax[2].imshow(data["semantic_gt"])
         ax[2].set_title("Semantic GT")
 
-        ax[3].imshow(data["semantic"])
+        ax[3].imshow(data["semantic_rgb"])
         ax[3].set_title("Semantic pred")
 
         print("Pose: ", data["pose"])

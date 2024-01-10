@@ -3,6 +3,7 @@ from typing import List, Literal
 
 from PIL import Image
 import numpy as np
+from scipy.spatial.transform import Rotation
 
 import airsim #type: ignore
 
@@ -32,10 +33,10 @@ class AirsimBridgeConfig(BaseBridgeConfig):
     semantic_config: List[tuple] = field(default_factory=list, metadata={"default": []})
     """ Semantic configuration """
 
-    width: float = 512
+    width: int = 512
     """ Image width """
 
-    height: float = 512
+    height: int = 512
     """ Image height """
 
     fov_h: float = 54.4
@@ -149,7 +150,10 @@ class AirsimBridge(BaseBridge):
         data = {}
         if "pose" in self.cfg.data_types:
             pose = self.client.simGetVehiclePose()
-            data["pose"] = pose
+            translation = np.array([pose.position.x_val, pose.position.y_val, pose.position.z_val])
+            quat = np.array([pose.orientation.x_val, pose.orientation.y_val, pose.orientation.z_val, pose.orientation.w_val])
+            rotation = Rotation.from_quat(quat)
+            data["pose"] = (translation, rotation)
 
         responses = self.client.simGetImages(self.query_data)
         img_data = self.process_img_responses(responses)

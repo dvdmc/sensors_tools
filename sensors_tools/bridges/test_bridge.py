@@ -11,6 +11,7 @@ from typing import List, Literal
 
 from PIL import Image
 import numpy as np
+from scipy.spatial.transform import Rotation
 
 from sensors_tools.base.cameras import CameraInfo
 from sensors_tools.bridges.base_bridge import BaseBridge, BaseBridgeConfig
@@ -35,10 +36,10 @@ class TestBridgeConfig(BaseBridgeConfig):
     dataset_path: Path = Path("./test_data/")
     """ Path to the dataset """
     
-    width: float = 512
+    width: int = 512
     """ Image width """
 
-    height: float = 512
+    height: int = 512
     """ Image height """
 
 
@@ -70,7 +71,7 @@ class TestBridge(BaseBridge):
         # RELEVANT CAMERA DATA
 
         # Get camera from the json "camera_intrinsics.json" inside the dataset folder
-        with open(self.cfg.dataset_path / "camera_intrinsics.json") as f:
+        with open(self.cfg.dataset_path / "camera_intrinsics.json", "r") as f:
             camera_data = json.load(f)
         
         print("Camera data: ", camera_data)
@@ -115,7 +116,10 @@ class TestBridge(BaseBridge):
         data = {}
         if "pose" in self.cfg.data_types:
             pose_path = self.cfg.dataset_path / "pose" / f"{self.seq_n:04d}.txt"
-            data["pose"] = np.loadtxt(pose_path)
+            pose_matrix = np.loadtxt(pose_path)
+            translation = pose_matrix[:3, 3]
+            rotation = Rotation.from_matrix(pose_matrix[:3, :3])
+            data["pose"] = (translation, rotation)
 
         img_data = self.open_images()
 
@@ -126,6 +130,11 @@ class TestBridge(BaseBridge):
 
         return data
     
+    def move(self):
+        """
+            Apply increment seq as moving the sensor
+        """
+        self.increment_seq()
 
     def increment_seq(self):
         """

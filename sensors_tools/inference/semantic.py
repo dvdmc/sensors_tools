@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 from matplotlib import pyplot as plt
 
 import numpy as np
@@ -96,7 +96,7 @@ class SemanticInference:
         return img_out
 
     # TODO: Debug this
-    def get_prediction(self, img: Image.Image) -> tuple:
+    def get_prediction(self, img: Image.Image) -> Tuple[np.ndarray, Image.Image]:
         """
             Get the prediction from the model assuming it is deterministic
             Args:
@@ -113,12 +113,12 @@ class SemanticInference:
             probs = self.softmax(output_logs)
 
         probs = probs[0] # Remove batch dimension
+        pred = torch.argmax(probs, dim=0).cpu().numpy()
         probs_np = probs.cpu().numpy()
-        pred = np.argmax(probs_np, axis=0)
         img_np = np.array(img)
         img_out = self.overlay_label_rgb(pred, img_np)
         
-        return pred, img_out
+        return probs_np, img_out
     
 
     

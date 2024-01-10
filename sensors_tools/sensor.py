@@ -5,7 +5,7 @@ from sensors_tools.bridges import BridgeConfig, BridgeType, get_bridge
 
 from sensors_tools.inference.semantic import SemanticInferenceConfig, SemanticInference
 from sensors_tools.inference.semantic_mcd import SemanticMCDInference, SemanticMCDInferenceConfig
-from sensors_tools.sensors_tools.inference import get_inference
+from sensors_tools.inference import get_inference
 
 @dataclass
 class SensorConfig:
@@ -46,6 +46,6 @@ class SemanticInferenceSensor:
         if "semantic" in self.cfg.bridge_cfg.data_types:
             probs, img_out = self.inference_model.get_prediction(img)
             data["semantic"] = probs
-            data["semnatic_rgb"] = img_out
+            data["semantic_rgb"] = img_out
 
         return data

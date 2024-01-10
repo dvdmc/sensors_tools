@@ -8,10 +8,10 @@ class CameraInfo:
         Stores camera parameters in a unified way
     """
 
-    width: float
+    width: int
     """ Image width """
 
-    height: float
+    height: int
     """ Image height """
 
     fx: float
@@ -42,7 +42,7 @@ class CameraInfo:
     """ Tangential distortion coefficient p2 """
     
     @classmethod
-    def from_fov_h(cls, width: float, height: float, fov_h: float) -> "CameraInfo":
+    def from_fov_h(cls, width: int, height: int, fov_h: float) -> "CameraInfo":
         """
             Create camera info from fov_h
 
