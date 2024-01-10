@@ -5,6 +5,7 @@ from sensors_tools.bridges import BridgeConfig, BridgeType, get_bridge
 
 from sensors_tools.inference.semantic import SemanticInferenceConfig, SemanticInference
 from sensors_tools.inference.semantic_mcd import SemanticMCDInference, SemanticMCDInferenceConfig
+from sensors_tools.sensors_tools.inference import get_inference
 
 @dataclass
 class SensorConfig:
@@ -22,18 +23,6 @@ class SensorConfig:
     
     inference_type: Literal["deterministic", "mcd"] = "deterministic"
     """ Type of inference to be used """
-
-def get_semantic_inference_model(cfg: SensorConfig) -> SemanticInference:
-    assert cfg.inference_cfg is not None, "Inference cfg must be specified if semantic data is requested"
-    assert cfg.inference_type is not None, "Inference type must be specified if semantic data is requested"
-    if cfg.inference_type == "deterministic":
-        assert isinstance(cfg.inference_cfg, SemanticInferenceConfig), "Inference cfg must be of type SemanticInferenceConfig"
-        return SemanticInference(cfg.inference_cfg)
-    elif cfg.inference_type == "mcd":
-        assert isinstance(cfg.inference_cfg, SemanticMCDInferenceConfig), "Inference cfg must be of type SemanticMCDInferenceConfig"
-        return SemanticMCDInference(cfg.inference_cfg)
-    else:
-        raise NotImplementedError("Inference type not implemented")
     
 class SemanticInferenceSensor:
     def __init__(self, cfg: SensorConfig):
@@ -46,7 +35,9 @@ class SemanticInferenceSensor:
 
         # Setup the inference models
         if "semantic" in self.cfg.bridge_cfg.data_types:
-            self.inference_model = get_semantic_inference_model(self.cfg)
+            assert self.cfg.inference_type is not None, "Inference type must be specified if semantic data is requested"
+            assert self.cfg.inference_cfg is not None, "Inference cfg must be specified if semantic data is requested"
+            self.inference_model = get_inference(self.cfg.inference_type, self.cfg.inference_cfg)
             self.inference_model.setup()
 
     def get_data(self):
@@ -54,6 +45,7 @@ class SemanticInferenceSensor:
         img = data["rgb"]
         if "semantic" in self.cfg.bridge_cfg.data_types:
             probs, img_out = self.inference_model.get_prediction(img)
-            data["semantic"] = img_out
+            data["semantic"] = probs
+            data["semnatic_rgb"] = img_out
 
         return data
