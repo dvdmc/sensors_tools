@@ -1,10 +1,10 @@
 from dataclasses import dataclass, field
 from typing import Literal, Optional, Union
 
-from bridges import BridgeConfig, BridgeType, get_bridge
+from sensors_tools.bridges import BridgeConfig, BridgeType, get_bridge
 
-from inference.semantic import SemanticInferenceConfig, SemanticInference
-from inference.semantic_mcd import SemanticMCDInference, SemanticMCDInferenceConfig
+from sensors_tools.inference.semantic import SemanticInferenceConfig, SemanticInference
+from sensors_tools.inference.semantic_mcd import SemanticMCDInference, SemanticMCDInferenceConfig
 
 @dataclass
 class SensorConfig:

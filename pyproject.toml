@@ -1,0 +1,13 @@
+[project]
+name = "sensors_tools"
+version = "0.1.0"
+
+dependencies=[
+    "numpy",
+    "matplotlib",
+    "Pillow",
+]
+
+# black
+[tool.black]
+line-length = 120

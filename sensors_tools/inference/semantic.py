@@ -10,7 +10,7 @@ from PIL import Image
 from torchvision import transforms
 from torchvision.models.segmentation.deeplabv3 import deeplabv3_resnet50
 
-from utils.semantics_utils import get_color_map, label2rgb
+from sensors_tools.utils.semantics_utils import get_color_map, label2rgb
 
 @dataclass
 class SemanticInferenceConfig:

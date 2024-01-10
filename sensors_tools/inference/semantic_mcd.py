@@ -2,8 +2,8 @@ from dataclasses import dataclass
 import numpy as np
 import torch
 
-from utils.semantics_utils import get_color_map
-from inference.semantic import SemanticInference, SemanticInferenceConfig
+from sensors_tools.utils.semantics_utils import get_color_map
+from sensors_tools.inference.semantic import SemanticInference, SemanticInferenceConfig
 
 @dataclass
 class SemanticMCDInferenceConfig(SemanticInferenceConfig):

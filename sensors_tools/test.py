@@ -9,8 +9,8 @@ from pathlib import Path
 from matplotlib import pyplot as plt
 import numpy as np
 from sensor import SensorConfig, SemanticInferenceSensor
-from bridges.test_bridge import TestBridgeConfig
-from inference.semantic import SemanticInferenceConfig
+from sensors_tools.bridges.test_bridge import TestBridgeConfig
+from sensors_tools.inference.semantic import SemanticInferenceConfig
 
 if __name__ == '__main__':
     # Setup the sensor
@@ -25,7 +25,7 @@ if __name__ == '__main__':
 
     sensor = SemanticInferenceSensor(cfg)
     sensor.setup()
-    
+
     fig, ax = plt.subplots(1,4)
 
     # Show the images
