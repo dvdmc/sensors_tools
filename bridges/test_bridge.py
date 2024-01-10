@@ -12,7 +12,8 @@ from typing import List, Literal
 from PIL import Image
 import numpy as np
 
-from .base_bridge import BaseBridge, BaseBridgeConfig
+from sensors_tools.base.cameras import CameraInfo
+from sensors_tools.bridges.base_bridge import BaseBridge, BaseBridgeConfig
 
 TestSensorDataTypes = Literal["rgb", "depth", "semantic", "pose"]
 """
@@ -73,6 +74,7 @@ class TestBridge(BaseBridge):
             camera_data = json.load(f)
         
         print("Camera data: ", camera_data)
+        self.camera_info = CameraInfo(cx=camera_data["cx"], cy=camera_data["cy"], fx=camera_data["fx"], fy=camera_data["fy"], width=self.cfg.width, height=self.cfg.height)
         #######################################################
     
 

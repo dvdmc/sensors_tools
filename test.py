@@ -24,7 +24,8 @@ if __name__ == '__main__':
     )
 
     sensor = SemanticInferenceSensor(cfg)
-
+    sensor.setup()
+    
     fig, ax = plt.subplots(1,4)
 
     # Show the images

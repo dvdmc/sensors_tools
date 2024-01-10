@@ -38,7 +38,6 @@ def get_semantic_inference_model(cfg: SensorConfig) -> SemanticInference:
 class SemanticInferenceSensor:
     def __init__(self, cfg: SensorConfig):
         self.cfg = cfg
-        self.setup()
 
     def setup(self):
         # Setup the bridge

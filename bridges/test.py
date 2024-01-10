@@ -8,7 +8,8 @@ from pathlib import Path
 import cv2
 from matplotlib import pyplot as plt
 import numpy as np
-from test_bridge import TestBridge, TestBridgeConfig
+
+from sensors_tools.bridges.test_bridge import TestBridge, TestBridgeConfig
 
 if __name__ == '__main__':
     config = TestBridgeConfig()

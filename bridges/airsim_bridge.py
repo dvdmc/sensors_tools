@@ -9,6 +9,7 @@ import airsim #type: ignore
 from airsim_tools.depth_conversion import depth_conversion
 from airsim_tools.semantics import airsim2class_id
 
+from base.cameras import CameraInfo
 from bridges.base_bridge import BaseBridge, BaseBridgeConfig
 
 AirsimSensorDataTypes = Literal["rgb", "depth", "semantic", "pose"]
@@ -72,6 +73,7 @@ class AirsimBridge(BaseBridge):
         self.fy = self.fx * self.height / self.width
         self.client.simSetFocusAperture(7.0, "0")  # Avoids depth of field blur
         self.client.simSetFocusDistance(100.0, "0")  # Avoids depth of field blur
+        self.camera_info = CameraInfo(cx=self.cx, cy=self.cy, fx=self.fx, fy=self.fy, width=self.width, height=self.height)
         #######################################################
 
         # Set the data to query

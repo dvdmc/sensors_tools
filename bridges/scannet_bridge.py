@@ -7,6 +7,8 @@ from PIL import Image
 import numpy as np
 import cv2
 
+from sensors_tools.base.cameras import CameraInfo
+
 from .base_bridge import BaseBridge, BaseBridgeConfig
 
 ScanNetSensorDataTypes = Literal["rgb", "depth", "semantic", "pose"]
@@ -98,7 +100,8 @@ class ScanNetBridge(BaseBridge):
                 self.cx_depth = float(line.split(" ")[2])
             elif "my_depth" in line:
                 self.cy_depth = float(line.split(" ")[2])
-
+        self.camera_info = CameraInfo(cx=self.cx_color, cy=self.cy_color, fx=self.fx_color, fy=self.fy_color, width=self.cfg.width, height=self.cfg.height)
+        self.camera_info_depth = CameraInfo(cx=self.cx_depth, cy=self.cy_depth, fx=self.fx_depth, fy=self.fy_depth, width=self.cfg.width, height=self.cfg.height)
         #######################################################
 
     def remap_NYU_classes(self, label_40):

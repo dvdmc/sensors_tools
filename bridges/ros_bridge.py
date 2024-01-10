@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from typing import List, Literal
 
 import rospy
+from sensors_tools.base.cameras import CameraInfo
 import tf2_ros
 from PIL import Image
 import numpy as np
@@ -11,7 +12,7 @@ import airsim #type: ignore
 from airsim_tools.depth_conversion import depth_conversion
 from airsim_tools.semantics import airsim2class_id
 
-from bridges.base_bridge import BaseBridge, BaseBridgeConfig
+from sensors_tools.bridges.base_bridge import BaseBridge, BaseBridgeConfig
 
 ROSSensorDataTypes = Literal["rgb", "pose"]
 """
@@ -84,6 +85,7 @@ class ROSBridge(BaseBridge):
         fov_h_rad = self.fov_h * np.pi / 180.0
         self.fx = self.cx / (np.tan(fov_h_rad / 2))
         self.fy = self.fx * self.height / self.width
+        self.camera_info = CameraInfo(cx=self.cx, cy=self.cy, fx=self.fx, fy=self.fy, width=self.cfg.width, height=self.cfg.height)
         #######################################################
 
     def rgb_callback(self, data):

@@ -1,4 +1,3 @@
-from sensors_tools.sensor import SemanticInferenceSensor, SensorConfig
 import numpy as np
 
 import rospy
@@ -10,18 +9,19 @@ from geometry_msgs.msg import TransformStamped
 from nav_msgs.msg import Odometry
 from tf2_ros import TransformBroadcaster, StaticTransformBroadcaster
 
+from sensors_tools.sensor import SemanticInferenceSensor, SensorConfig
+
 class SemanticNode:
     def __init__(self, cfg: SensorConfig):
         self.cfg = cfg
         self.setup()
 
     def setup(self):
-        self.sensor.setup()
 
         # Get params: frequency and inference type
         self.frequency = rospy.get_param('~frequency', 10)
         self.inference_type = rospy.get_param('~inference_type', 'deterministic')
-        self.cfg.inference_type = self.inference_type # TODO: Continue here
+        self.cfg.inference_type = self.inference_type
         self.sensor = SemanticInferenceSensor(self.cfg)
 
         self.static_tf = []
@@ -29,7 +29,7 @@ class SemanticNode:
         self.last_odom_msg = None
 
         #######################################################
-        # RELEVANT CAMERA DATA
+        # RELEVANT CAMERA DATA TODO: Get from bridge
         self.width = 512
         self.height = 512
         self.fov_h = 54.4
