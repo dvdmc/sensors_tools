@@ -61,7 +61,7 @@ class SemanticInference:
                                             transforms.Resize((self.cfg.height, self.cfg.width)),
                                             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),])
 
-        self.softmax = torch.nn.Softmax(dim=1).to(self.gpu_device)
+        self.softmax = torch.nn.Softmax(dim=1).to(self.gpu_device) # Assumes it is applied to batch
         
     def overlay_label_rgb(self, pred: np.ndarray, img: np.ndarray) -> Image.Image:
         """
@@ -106,19 +106,18 @@ class SemanticInference:
                 img_out: image with the prediction
         """
         img_t: torch.Tensor = self.transform_img(img)
-        # Change order to C,W,H
         img_t = img_t.unsqueeze(0)
         img_t = img_t.to(self.gpu_device)
         with torch.no_grad():
-            output_logs = self.model(img_t)['out'][0]
+            output_logs = self.model(img_t)['out']
             probs = self.softmax(output_logs)
 
+        probs = probs[0] # Remove batch dimension
         probs_np = probs.cpu().numpy()
         pred = np.argmax(probs_np, axis=0)
         img_np = np.array(img)
         img_out = self.overlay_label_rgb(pred, img_np)
-        plt.imshow(pred)
-        plt.show()
+        
         return pred, img_out
     
 
