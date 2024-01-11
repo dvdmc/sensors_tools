@@ -52,7 +52,7 @@ def generate_data(num: int) -> tuple:
     semantic_rgb[semantic == 1] = [0, 0, 255]
 
     # Generate the pose file
-    pose = np.zeros((4,4))
+    pose = np.eye(4)
     pose[0,3] = num
 
     return img, depth, semantic, semantic_rgb, pose
@@ -107,7 +107,7 @@ def generate_sheeps_img(num: int) -> tuple:
     semantic[mask_human] = 15
 
     # Generate the pose file
-    pose = np.zeros((4,4))
+    pose = np.eye(4)
     pose[0,3] = num
 
     return img, depth, semantic, semantic_rgb, pose
@@ -138,8 +138,8 @@ if __name__ == "__main__":
 
     # Save the camera intrinsics
     camera_intrinsics = {
-        "fx": 100,
-        "fy": 100,
+        "fx": 1000,
+        "fy": 1000,
         "cx": 256,
         "cy": 256
     }

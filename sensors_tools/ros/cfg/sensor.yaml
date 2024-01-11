@@ -1,8 +1,0 @@
-frequency: -1 # Frequency of the sensor in Hz. -1 means that we are using a service instead of a timer
-
-bridge:
-  source: 'airsim' # Source of the sensor. It can be 'airsim' or 'ros'
-
-inference:
-  inference_type: 'deterministic' # Type of inference. It can be 'deterministic' or 'mcd'
-  mcd_samples: 10 # Number of samples for the MCD inference

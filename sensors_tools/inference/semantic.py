@@ -58,12 +58,12 @@ class SemanticInference:
         self.model.eval()
     
         self.transform_img = transforms.Compose([transforms.ToTensor(),
-                                            transforms.Resize((self.cfg.height, self.cfg.width)),
+                                            transforms.Resize((self.cfg.height, self.cfg.width), antialias=True), # type: ignore
                                             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),])
 
         self.softmax = torch.nn.Softmax(dim=1).to(self.gpu_device) # Assumes it is applied to batch
         
-    def overlay_label_rgb(self, pred: np.ndarray, img: np.ndarray) -> Image.Image:
+    def overlay_label_rgb(self, pred: np.ndarray, img: np.ndarray) -> np.ndarray:
         """
             Overlay the predicted label on top of the RGB image
             Args:
@@ -92,11 +92,12 @@ class SemanticInference:
 
         # Merge predicted color image with RGB image
         input_alpha_image = Image.fromarray(img).convert('RGBA').resize((self.cfg.width, self.cfg.height))
-        img_out = Image.alpha_composite(input_alpha_image, r)
+        img_out = Image.alpha_composite(input_alpha_image, r).convert("RGB")
+        img_out = np.array(img_out)
+
         return img_out
 
-    # TODO: Debug this
-    def get_prediction(self, img: Image.Image) -> Tuple[np.ndarray, Image.Image]:
+    def get_prediction(self, img: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
             Get the prediction from the model assuming it is deterministic
             Args:

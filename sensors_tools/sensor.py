@@ -18,7 +18,7 @@ class SensorConfig:
     bridge_type: BridgeType
     """ Type of bridge to be used """
 
-    inference_cfg: Optional[SemanticInferenceConfig | SemanticMCDInferenceConfig] = field(default_factory=SemanticInferenceConfig, metadata={"default": SemanticInferenceConfig()})
+    inference_cfg: Optional[Union[SemanticInferenceConfig, SemanticMCDInferenceConfig]] = field(default_factory=SemanticInferenceConfig, metadata={"default": SemanticInferenceConfig()})
     """ Inference configuration """
     
     inference_type: Literal["deterministic", "mcd"] = "deterministic"

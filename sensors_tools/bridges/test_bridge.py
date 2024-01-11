@@ -96,8 +96,8 @@ class TestBridge(BaseBridge):
         if "semantic" in self.cfg.data_types:
             # Load GT label
             label_path = self.cfg.dataset_path / "label" / f"{self.seq_n:04d}.png"
-            label = np.array(Image.open(label_path))
-            data["semantic_gt"] = label
+            label = Image.open(label_path)
+            data["semantic_gt"] = np.array(label)
 
         if "depth" in self.cfg.data_types:
             # Load depth image (depth frames as 16-bit pngs (depth shift 1000))
@@ -141,6 +141,6 @@ class TestBridge(BaseBridge):
             Increment the sequence number
         """
         self.seq_n += 1
-        if self.seq_n > self.data_length:
-            self.seq_n = 1
-        print("Sequence number: ", self.seq_n)
+        if self.seq_n == self.data_length:
+            self.seq_n = 0
+        # print("Sequence number: ", self.seq_n)
