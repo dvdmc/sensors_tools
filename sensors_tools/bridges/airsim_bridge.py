@@ -130,7 +130,7 @@ class AirsimBridge(BaseBridge):
                     response.image_data_float, response.width, response.height
                 )
                 img_depth_meters_corrected = depth_conversion(img_depth_meters, self.fx)
-                img_data["depth"] = np.array(img_depth_meters_corrected)
+                img_data["depth"] = np.array(img_depth_meters_corrected).astype(np.float32)
 
             elif response.image_type == airsim.ImageType.Segmentation:
                 # Transform Airsim segmentation image to a different color system
