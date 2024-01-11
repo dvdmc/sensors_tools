@@ -44,8 +44,11 @@ class SemanticInferenceSensor:
         data = self.bridge.get_data()
         img = data["rgb"]
         if "semantic" in self.cfg.bridge_cfg.data_types:
-            probs, img_out = self.inference_model.get_prediction(img)
-            data["semantic"] = probs
-            data["semantic_rgb"] = img_out
+            out = self.inference_model.get_prediction(img)
+            data["semantic"] = out["probs"]
+            data["semantic_rgb"] = out["img_out"]
+        
+            if self.cfg.inference_type == "mcd":
+                data["epistemic_var"] = out["epistemic_var"]
 
         return data

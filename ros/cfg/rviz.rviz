@@ -6,11 +6,8 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
-        - /Semantic GT1
-        - /Semantic GT1/Status1
         - /PointCloud1
         - /Cam Odom1
-        - /Cam Odom1/Status1
       Splitter Ratio: 0.5
     Tree Height: 396
   - Class: rviz/Selection
@@ -114,14 +111,14 @@ Visualization Manager:
       Channel Name: intensity
       Class: rviz/PointCloud2
       Color: 255; 255; 255
-      Color Transformer: ""
+      Color Transformer: RGB8
       Decay Time: 0
       Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Min Color: 0; 0; 0
       Name: PointCloud
-      Position Transformer: ""
+      Position Transformer: XYZ
       Queue Size: 10
       Selectable: true
       Size (Pixels): 3
@@ -163,7 +160,7 @@ Visualization Manager:
         Head Radius: 0.10000000149011612
         Shaft Length: 1
         Shaft Radius: 0.05000000074505806
-        Value: Arrow
+        Value: Axes
       Topic: /cam0/odom
       Unreliable: false
       Value: true
@@ -195,7 +192,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 11.913800239562988
+      Distance: 13.919197082519531
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -203,17 +200,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0
-        Y: 0
-        Z: 0
+        X: 2.464475631713867
+        Y: 2.830216407775879
+        Z: 0.9165831804275513
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.5553981065750122
+      Pitch: 0.5953972339630127
       Target Frame: <Fixed Frame>
-      Yaw: 0.8003979921340942
+      Yaw: 0.08539839088916779
     Saved: ~
 Window Geometry:
   Depth:

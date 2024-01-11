@@ -10,8 +10,8 @@ import airsim #type: ignore
 from airsim_tools.depth_conversion import depth_conversion
 from airsim_tools.semantics import airsim2class_id
 
-from base.cameras import CameraInfo
-from bridges.base_bridge import BaseBridge, BaseBridgeConfig
+from sensors_tools.base.cameras import CameraInfo
+from sensors_tools.bridges.base_bridge import BaseBridge, BaseBridgeConfig
 
 AirsimSensorDataTypes = Literal["rgb", "depth", "semantic", "pose"]
 """
@@ -30,7 +30,7 @@ class AirsimBridgeConfig(BaseBridgeConfig):
     data_types: List[AirsimSensorDataTypes] = field(default_factory=list, metadata={"default": ["rgb", "pose"]})
     """ Data types to query """
 
-    semantic_config: List[tuple] = field(default_factory=list, metadata={"default": []})
+    semantic_config: List[List] = field(default_factory=list, metadata={"default": []})
     """ Semantic configuration """
 
     width: int = 512
@@ -124,13 +124,13 @@ class AirsimBridge(BaseBridge):
                 )
                 correct_image = np_image[:, :, ::-1]
                 image = Image.fromarray(correct_image)
-                img_data["rgb"] = image
+                img_data["rgb"] = np.array(image)
             elif response.image_type == airsim.ImageType.DepthPerspective:
                 img_depth_meters = airsim.list_to_2d_float_array(
                     response.image_data_float, response.width, response.height
                 )
                 img_depth_meters_corrected = depth_conversion(img_depth_meters, self.fx)
-                img_data["depth"] = img_depth_meters_corrected
+                img_data["depth"] = np.array(img_depth_meters_corrected)
 
             elif response.image_type == airsim.ImageType.Segmentation:
                 # Transform Airsim segmentation image to a different color system
@@ -139,7 +139,7 @@ class AirsimBridge(BaseBridge):
                 np_rgb_airsim = img_rgb_airsim[:,:,::-1]
                 # Get the semantic image
                 semantic = airsim2class_id(np_rgb_airsim)
-                img_data["semantic_gt"] = semantic
+                img_data["semantic_gt"] = np.array(semantic)
 
         return img_data
     

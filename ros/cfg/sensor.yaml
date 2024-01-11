@@ -1,12 +1,13 @@
-frequency: 0.001 # Frequency of the sensor in Hz. -1 means that we are using a service instead of a timer
+frequency: 10.0 # Frequency of the sensor in Hz. -1 means that we are using a service instead of a timer
 
 # Config for bridge is in sensors_tools/bridge/{bridge_type}.py
 bridge:
-  bridge_type: 'test' # Source of the sensor. It can be 'airsim' or 'ros'
+  bridge_type: 'airsim' # Source of the sensor. It can be 'airsim' or 'ros'
   data_types: ['rgb', 'depth', 'semantic', 'pose'] # Data types to be published. It can be 'rgb', 'depth', 'segmentation', 'pointcloud'
   dataset_path: '/media/david/git/phd-utils/phd_utils/sensors_tools/sensors_tools/bridges/test_data/dataset'
   width: 512
   height: 512
+  semantic_config: [["bottle", 5]]
 
 # Config for inference is in sensors_tools/inference/{inference_type}.py
 inference:

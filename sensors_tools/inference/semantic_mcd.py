@@ -27,34 +27,36 @@ class SemanticMCDInference(SemanticInference):
                 print('We found a dropout layer', m)
                 m.train()
         
-    def get_prediction(self, img: torch.Tensor) -> tuple:
+    def get_prediction(self, img: np.ndarray) -> dict:
         """
             Get the prediction from the model assuming it is deterministic
             Args:
                 img: image to be processed
             Returns:
-                probs: probability vectors from the model
-                img_out: image with the prediction
+                out: dictionary with the outputs. For this inference model: probs, img_out
         """
-        img = self.transform_img(img)
-        img = img.unsqueeze(0)
-        img = img.to(self.gpu_device)
-        accumulated_pred = torch.zeros((self.cfg.num_mc_samples, self.cfg.num_classes, img.shape[2], img.shape[3])).to(self.gpu_device)
+        img_t: torch.Tensor = self.transform_img(img)
+        img_t = img_t.unsqueeze(0)
+        img_t = img_t.to(self.gpu_device)
+        accumulated_probs = torch.zeros((self.cfg.num_mc_samples, self.cfg.num_classes, img.shape[2], img.shape[3])).to(self.gpu_device)
         num_pass = 0
         with torch.no_grad():
             for n_pass in range(self.cfg.num_mc_samples):
-                output_logs = self.model(img)
+                output_logs = self.model(img)['out']
                 probs = self.softmax(output_logs)
-                accumulated_pred[n_pass] = probs.squeeze(0)
+                accumulated_probs[n_pass] = probs[0]
         
+        average_probs = torch.mean(accumulated_probs, dim = 0)
+        pred = torch.max(average_probs, dim = 0)
         # TODO: Variance things
-        epistemic_var = torch.var(accumulated_pred, dim = 0).cpu().numpy()
-
-        average_pred = torch.mean(accumulated_pred, dim = 0)
-        pred_class_prob, pred_class = torch.max(average_pred, dim = 1) # Check dims
-        pred_class = np.squeeze(pred_class).cpu()
-        pred_class_prob = np.squeeze(pred_class_prob).cpu()
-        img_out = self.overlay_label_rgb(pred_class_prob, img)
-
-        return average_pred, epistemic_var, img_out
-    
+        epistemic_var = torch.var(accumulated_probs, dim = 0).cpu().numpy()
+        average_pred_np = average_probs.cpu().numpy()
+        accumulated_probs_np = accumulated_probs.cpu().numpy()
+        img_out = self.overlay_label_rgb(pred, img)
+        out = {
+            'probs': average_pred_np,
+            'acc_probs': accumulated_probs_np,
+            'img_out': img_out,
+            'epistemic_var': epistemic_var
+        }
+        return out

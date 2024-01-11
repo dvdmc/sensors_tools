@@ -97,14 +97,13 @@ class SemanticInference:
 
         return img_out
 
-    def get_prediction(self, img: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def get_prediction(self, img: np.ndarray) -> dict:
         """
             Get the prediction from the model assuming it is deterministic
             Args:
                 img: image to be processed
             Returns:
-                probs: probability vectors from the model
-                img_out: image with the prediction
+                out: dictionary with the outputs. For this inference model: probs, img_out
         """
         img_t: torch.Tensor = self.transform_img(img)
         img_t = img_t.unsqueeze(0)
@@ -116,10 +115,7 @@ class SemanticInference:
         probs = probs[0] # Remove batch dimension
         pred = torch.argmax(probs, dim=0).cpu().numpy()
         probs_np = probs.cpu().numpy()
-        img_np = np.array(img)
-        img_out = self.overlay_label_rgb(pred, img_np)
-        
-        return probs_np, img_out
-    
+        img_out = self.overlay_label_rgb(pred, img)
+        out = {'probs': probs_np, 'img_out': img_out}
 
-    
+        return out

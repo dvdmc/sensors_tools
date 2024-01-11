@@ -94,7 +94,7 @@ class SemanticNode:
             if self.controllable_bridge:
                 self.srv_move = rospy.Service(f'/{self.camera_name}/move', SetBool, self.move_srv)
         else:
-            interval = int(1.0/self.frequency)
+            interval = int(1.0/self.frequency*1e9)
             self.timer = rospy.Timer(rospy.Duration(nsecs=interval), self.loop)
 
 
@@ -103,13 +103,13 @@ class SemanticNode:
             Load config from rosparams
         """
         print("Loading ROSPARAMS")
-        bridge_type = rospy.get_param("~bridge_type", "test")
+        bridge_type = rospy.get_param("~bridge/bridge_type", "test")
         print(f"Bridge type: {bridge_type}")
         bridge_config_class = get_bridge_config(bridge_type) # type: ignore TODO: Solve
         bridge_parameters = self.load_rosparams(bridge_config_class, "bridge")
         bridge_cfg = bridge_config_class(**bridge_parameters)
 
-        inference_type = rospy.get_param("~inference_type", "deterministic")
+        inference_type = rospy.get_param("~inference/inference_type", "deterministic")
         print(f"Inference type: {inference_type}")
         inference_config_class = get_inference_config(inference_type) # type: ignore TODO: Solve
         inference_parameters = self.load_rosparams(inference_config_class, "inference")
@@ -193,7 +193,7 @@ class SemanticNode:
             static_tf.header.stamp = timestamp
             self.static_tf_broadcaster.sendTransform(static_tf)
     
-    def pcd_from_rgb_depth(self, rgb: Image.Image, depth: Image.Image) -> Tuple[np.ndarray, np.ndarray]:
+    def pcd_from_rgb_depth(self, rgb: np.ndarray, depth: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """A function that converts an rgb image and a depth image to a point cloud
         Depth image is measured with respect to image plane. 
         Depth is along X axis
@@ -205,8 +205,8 @@ class SemanticNode:
         Returns:
             pcd: a point cloud as a numpy array with shape (H*W, 4)
         """
-        rgb_np = np.array(rgb).astype(np.float32) / 255
-        depth_np = np.array(depth)
+        rgb_np = rgb.astype(np.float32) / 255
+        depth_np = depth
         H = depth_np.shape[0]
         W = depth_np.shape[1]
         columns, rows = np.meshgrid(np.linspace(0, W-1, num=int(W/self.stride)), np.linspace(0, H-1, num=int(H/self.stride))) # type: ignore
@@ -217,8 +217,9 @@ class SemanticNode:
         pcd = np.dstack((x, y, z)).astype(np.float32)
         colors = rgb_np[::self.stride, ::self.stride, :] * 255
         colors = colors.astype(np.uint8)
+        # We have to create a new np.array to swap channels and use the view function later
         # Add alpha channel
-        colors = np.dstack((colors, np.ones((colors.shape[0], colors.shape[1], 1), dtype=np.uint8) * 255))
+        colors = np.dstack((colors[:, :, 2], colors[:, :, 1], colors[:, :, 0], np.ones((colors.shape[0], colors.shape[1], 1), dtype=np.uint8) * 255))
         return pcd, colors
 
     def generate_point_cloud_msg(self, points_pcd: np.ndarray, points_RGB: np.ndarray, semantic: np.ndarray, semantic_gt: np.ndarray, time_stamp: rospy.Time):
