@@ -1,23 +1,29 @@
 cmake_minimum_required(VERSION 3.10)
 project(sensors_tools_ros)
 
-
-## Find catkin macros and libraries
-## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
-## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-# catkin_simple
-cv_bridge
-rospy
-sensor_msgs
-geometry_msgs
-tf_conversions
+  rospy
+  sensor_msgs
+  geometry_msgs
+  nav_msgs
+  tf2_ros
+  std_srvs
+  cv_bridge
+  tf_conversions
 )
 
-catkin_package()
+catkin_package(
+  CATKIN_DEPENDS
+    rospy
+    sensor_msgs
+    geometry_msgs
+    nav_msgs
+    tf2_ros
+    std_srvs
+    cv_bridge
+    tf_conversions
+)
 
-###########
-## Build ##
-###########
-
-## Nothing to build, this is a Python only package
+include_directories(
+  ${catkin_INCLUDE_DIRS}
+)

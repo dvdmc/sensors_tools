@@ -5,15 +5,11 @@
   <description>Sensors tools for conversion and inference</description>
   <maintainer email="davidmc@unizar.es">David Morilla-Cabello</maintainer>
 
-  <!-- One license tag required, multiple allowed, one license per tag -->
-  <!-- Commonly used license strings: -->
-  <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
-  <license>TODO</license>
+  <license>BSD</license>
 
   <url type="repository">https://github.com/dvdmc/sensors_tools</url>
 
   <author email="davidmc@unizar.es">David Morilla-Cabello</author>
-
 
   <buildtool_depend>catkin</buildtool_depend>
 
