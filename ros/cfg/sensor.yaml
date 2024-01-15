@@ -7,7 +7,7 @@ bridge:
   dataset_path: '/media/david/git/phd-utils/phd_utils/sensors_tools/sensors_tools/bridges/test_data/dataset'
   width: 512
   height: 512
-  semantic_config: [["bottle", 5]]
+  semantic_config: [["Bottle", 5]]
 
 # Config for inference is in sensors_tools/inference/{inference_type}.py
 inference:
