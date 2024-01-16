@@ -30,8 +30,11 @@ class ScanNetBridgeConfig(BaseBridgeConfig):
     data_types: List[ScanNetSensorDataTypes] = field(default_factory=list, metadata={"default": ["rgb", "poses"]})
     """ Data types to query """
 
-    dataset_path: Path = Path("/home/david/datasets/ScanNet")
+    dataset_path: Path = Path("/media/david/dataset/ScanNet")
     """ Path to the dataset """
+
+    tsv_path: Path = Path("/media/david/dataset/ScanNet/scannetv2-labels.combined.tsv")
+    """ Path to the tsv file """
 
     downsampling_factor_dataset: int = 20
     """ Downsampling factor for the dataset. Or how many images are there in between images. """
@@ -72,7 +75,9 @@ class ScanNetBridge(BaseBridge):
         # RELEVANT CAMERA DATA
 
         # Get camera from the textfile "sequence_name.txt" inside the dataset folder
-        sequence_data_file = open(self.cfg.dataset_path / "sequence_name.txt", "r")
+        # Sequence name is the name of the folder where the data is stored
+        self.sequence_name = f"{self.cfg.dataset_path.name}.txt"
+        sequence_data_file = open(self.cfg.dataset_path / self.sequence_name, "r")
         sequence_data = sequence_data_file.readlines()
         sequence_data_file.close()
 
@@ -105,8 +110,7 @@ class ScanNetBridge(BaseBridge):
         self.camera_info = CameraInfo(cx=self.cx_color, cy=self.cy_color, fx=self.fx_color, fy=self.fy_color, width=self.cfg.width, height=self.cfg.height)
         self.camera_info_depth = CameraInfo(cx=self.cx_depth, cy=self.cy_depth, fx=self.fx_depth, fy=self.fy_depth, width=self.cfg.width, height=self.cfg.height)
         #######################################################
-        self.tsv_file = '/home/david/dataset/scannetv2-labels.combined.tsv' # TODO: Fix
-        label_mapping = pd.read_csv(self.tsv_file, sep='\t')
+        label_mapping = pd.read_csv(self.cfg.tsv_path, sep='\t')
         NYU_classes = label_mapping['nyu40id'].values
         id_classes = label_mapping['id'].values
         self.remap_to_NYU_classes = {id_classes[i]: NYU_classes[i].astype(int) for i in range(len(NYU_classes))}
