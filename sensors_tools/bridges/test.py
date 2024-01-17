@@ -9,16 +9,16 @@ import cv2
 from matplotlib import pyplot as plt
 import numpy as np
 
-from sensors_tools.bridges.test_bridge import TestBridge, TestBridgeConfig
+from sensors_tools.bridges.scannet_bridge import ScanNetBridge, ScanNetBridgeConfig
 
 if __name__ == '__main__':
-    config = TestBridgeConfig()
+    config = ScanNetBridgeConfig()
     config.data_types = ["rgb", "depth", "semantic", "pose"]
-    config.dataset_path = Path("./test_data/dataset/")
+    config.dataset_path = Path("/home/david/research/APbayDL/dataset/scene0005_00")
     config.width = 512
     config.height = 512
 
-    bridge = TestBridge(config)
+    bridge = ScanNetBridge(config)
     bridge.setup()
 
 

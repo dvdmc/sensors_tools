@@ -38,12 +38,6 @@ class ScanNetBridgeConfig(BaseBridgeConfig):
 
     downsampling_factor_dataset: int = 20
     """ Downsampling factor for the dataset. Or how many images are there in between images. """
-    
-    width: int = 512
-    """ Image width """
-
-    height: int = 512
-    """ Image height """
 
 
 class ScanNetBridge(BaseBridge):
@@ -64,7 +58,7 @@ class ScanNetBridge(BaseBridge):
         # Data acquisition configuration
         self.static_tf = []
         print("Dataset path: ", self.cfg.dataset_path)
-        self.seq_n = 1
+        self.seq_n = 0
         self.each_n_frame = self.cfg.downsampling_factor_dataset
         self.data_length = len(os.listdir(self.cfg.dataset_path / "color"))
         print("Sequence length: ", self.data_length)
@@ -107,8 +101,19 @@ class ScanNetBridge(BaseBridge):
                 self.cx_depth = float(line.split(" ")[2])
             elif "my_depth" in line:
                 self.cy_depth = float(line.split(" ")[2])
-        self.camera_info = CameraInfo(cx=self.cx_color, cy=self.cy_color, fx=self.fx_color, fy=self.fy_color, width=self.cfg.width, height=self.cfg.height)
-        self.camera_info_depth = CameraInfo(cx=self.cx_depth, cy=self.cy_depth, fx=self.fx_depth, fy=self.fy_depth, width=self.cfg.width, height=self.cfg.height)
+        # We adjust to the depth image size
+        ratio_width = self.width_depth/self.width_color
+        ratio_height = self.height_depth/self.height_color
+        self.width_color = self.width_depth
+        self.height_color = self.height_depth
+        # Adapt cx, cy, fx and fy
+        self.cx_color = self.cx_color*ratio_width
+        self.cy_color = self.cy_color*ratio_height
+        self.fx_color = self.fx_color*ratio_width
+        self.fy_color = self.fy_color*ratio_height
+        self.camera_info = CameraInfo(cx=self.cx_color, cy=self.cy_color, fx=self.fx_color, fy=self.fy_color, width=self.width_color, height=self.height_color) 
+        print("CAMERA INFO: ", self.camera_info)
+        self.camera_info_depth = CameraInfo(cx=self.cx_depth, cy=self.cy_depth, fx=self.fx_depth, fy=self.fy_depth, width=self.width_depth, height=self.height_depth)
         #######################################################
         label_mapping = pd.read_csv(self.cfg.tsv_path, sep='\t')
         NYU_classes = label_mapping['nyu40id'].values
@@ -146,8 +151,8 @@ class ScanNetBridge(BaseBridge):
             img_path = self.cfg.dataset_path / "color" / f"{self.seq_n}.jpg"
             # Open image as a np array
             img = (Image.open(img_path)).convert('RGB')
-            img = img.resize((640, 480)) #Resize to match the depth image
-            img = img.crop((80, 0, 560, 480)) #Crop the image to match the depth image
+            img = img.resize((self.camera_info_depth.width, self.camera_info_depth.height)) #Resize to match the depth image
+            # img = img.crop((80, 0, 560, 480)) #Crop the image to match the depth image
             data["rgb"] = np.array(img)
         
         if "semantic" in self.cfg.data_types:
@@ -156,8 +161,8 @@ class ScanNetBridge(BaseBridge):
             label = np.array(Image.open(label_path))
             label = self.remap_ScanNet_to_13_classes(label)
             label[np.where(label == 255)] = 0 #Remove the white contour
-            label = cv2.resize(label, (640, 480), interpolation = cv2.INTER_NEAREST)
-            label = label[:, 80:560]
+            label = cv2.resize(label, (self.camera_info_depth.width, self.camera_info_depth.height), interpolation = cv2.INTER_NEAREST)
+            # label = label[:, 80:560]
             data["semantic_gt"] = label
 
         if "depth" in self.cfg.data_types:
@@ -165,7 +170,7 @@ class ScanNetBridge(BaseBridge):
             depth_path = self.cfg.dataset_path / "depth" / f"{self.seq_n}.png"
             depth = np.array(Image.open(depth_path))
             depth = (depth/1000).astype(np.float32)
-            depth = depth[:, 80:560]
+            # depth = depth[:, 80:560]
             data["depth"] = depth
 
         return data
@@ -188,3 +193,9 @@ class ScanNetBridge(BaseBridge):
         data.update(img_data)
 
         return data
+
+    def move(self):
+        """
+            Apply increment seq as moving the sensor
+        """
+        self.seq_n += self.each_n_frame

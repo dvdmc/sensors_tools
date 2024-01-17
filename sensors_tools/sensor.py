@@ -3,8 +3,8 @@ from typing import Literal, Optional, Union
 
 from sensors_tools.bridges import BridgeConfig, BridgeType, get_bridge
 
-from sensors_tools.inference.semantic import SemanticInferenceConfig, SemanticInference
-from sensors_tools.inference.semantic_mcd import SemanticMCDInference, SemanticMCDInferenceConfig
+from sensors_tools.inference.semantic import SemanticInferenceConfig
+from sensors_tools.inference.semantic_mcd import SemanticMCDInferenceConfig
 from sensors_tools.inference import get_inference
 
 @dataclass
@@ -50,5 +50,5 @@ class SemanticInferenceSensor:
         
             if self.cfg.inference_type == "mcd":
                 data["epistemic_var"] = out["epistemic_var"]
-
+                data["acc_probs"] = out["acc_probs"]
         return data

@@ -1,8 +1,18 @@
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Optional, Tuple
+from matplotlib import pyplot as plt
+
 import numpy as np
 import torch
+from PIL import Image
+import cv2
 
-from sensors_tools.utils.semantics_utils import get_color_map
+from torchvision import transforms
+
+from sensors_tools.utils.semantics_utils import get_color_map, label2rgb
+
+from . import get_model
 from sensors_tools.inference.semantic import SemanticInference, SemanticInferenceConfig
 
 @dataclass
@@ -19,13 +29,38 @@ class SemanticMCDInference(SemanticInference):
         self.cfg = cfg
 
     def setup(self):
-        super().setup()
 
+        # NN configuration
+        self.gpu_device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+
+        # Get the color map
+        self.color_map = get_color_map(self.cfg.labels_name, bgr=False)
+
+        # Setup the semantic inference model
+        custom_weights: bool = self.cfg.weights_path is not None
+        self.model = get_model("mcd", self.cfg, pretrained = not custom_weights)
+
+        # Load the pretrained model
+        if custom_weights:
+            load_weights = False
+            weights = torch.load(str(self.cfg.weights_path), map_location=self.gpu_device)
+            self.model.load_state_dict(weights['model_state_dict'], strict=True)
+
+        
+
+        self.model.to(self.gpu_device)
+        self.model.eval()
         #We set the dropout layers active during inference!
         for m in self.model.modules():
             if m.__class__.__name__.startswith('Dropout'):
                 print('We found a dropout layer', m)
                 m.train()
+    
+        self.transform_img = transforms.Compose([transforms.ToTensor(),
+                                            transforms.Resize((self.cfg.height, self.cfg.width), antialias=True), # type: ignore
+                                            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),])
+
+        self.softmax = torch.nn.Softmax(dim=1).to(self.gpu_device) # Assumes it is applied to batch
         
     def get_prediction(self, img: np.ndarray) -> dict:
         """
@@ -35,6 +70,8 @@ class SemanticMCDInference(SemanticInference):
             Returns:
                 out: dictionary with the outputs. For this inference model: probs, img_out
         """
+        prev_width = img.shape[1]
+        prev_height = img.shape[0]
         img_t: torch.Tensor = self.transform_img(img)
         img_t = img_t.unsqueeze(0)
         img_t = img_t.to(self.gpu_device)
@@ -42,7 +79,7 @@ class SemanticMCDInference(SemanticInference):
         num_pass = 0
         with torch.no_grad():
             for n_pass in range(self.cfg.num_mc_samples):
-                output_logs = self.model(img)['out']
+                output_logs = self.model(img_t)['out']
                 probs = self.softmax(output_logs)
                 accumulated_probs[n_pass] = probs[0]
         

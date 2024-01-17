@@ -1,5 +1,5 @@
 frequency: 10.0 # Frequency of the sensor in Hz. -1 means that we are using a service instead of a timer
-
+stride: 8 # Stride of the sensor for generating the pointcloud
 # Config for bridge is in sensors_tools/bridge/{bridge_type}.py
 bridge:
   bridge_type: 'airsim' # Source of the sensor. It can be 'airsim' or 'ros'
@@ -11,7 +11,8 @@ bridge:
 
 # Config for inference is in sensors_tools/inference/{inference_type}.py
 inference:
-  inference_type: 'deterministic' # Type of inference. It can be 'deterministic' or 'mcd'
-  num_classes: 21
+  inference_type: 'mcd' # Type of inference. It can be 'deterministic' or 'mcd'
+  weights_path: "/home/david/research/APbayDL/preliminaryBayesian/models/VOC12_7_classes_Resnet50_Drop03_AllBlocks_epoch_60"
+  num_classes: 7
   labels_name: "coco_voc"
   mcd_samples: 10 # Number of samples for the MCD inference

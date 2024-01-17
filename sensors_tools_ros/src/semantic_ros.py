@@ -103,7 +103,7 @@ class SemanticNode:
             Load config from rosparams
         """
         print("Loading ROSPARAMS")
-        bridge_type = rospy.get_param("~bridge/bridge_type", "test")
+        bridge_type = rospy.get_param("~bridge/bridge_type")
         print(f"Bridge type: {bridge_type}")
         bridge_config_class = get_bridge_config(bridge_type) # type: ignore TODO: Solve
         bridge_parameters = self.load_rosparams(bridge_config_class, "bridge")
@@ -207,8 +207,8 @@ class SemanticNode:
         """
         rgb_np = rgb.astype(np.float32) / 255
         depth_np = depth
-        H = depth_np.shape[0]
         W = depth_np.shape[1]
+        H = depth_np.shape[0]
         columns, rows = np.meshgrid(np.linspace(0, W-1, num=int(W/self.stride)), np.linspace(0, H-1, num=int(H/self.stride))) # type: ignore
         point_depth = depth_np[::self.stride, ::self.stride]
         y = -(columns - self.camera_info.cx) * point_depth / self.camera_info.fx # Originally x : Now -y
@@ -223,6 +223,16 @@ class SemanticNode:
         return pcd, colors
 
     def generate_point_cloud_msg(self, points_pcd: np.ndarray, points_RGB: np.ndarray, semantic: np.ndarray, semantic_gt: np.ndarray, time_stamp: rospy.Time):
+        """
+            Generate a point cloud message with semantics using the pcd from the RGB-D images
+
+            Args:
+                points_pcd: a numpy array with shape (H*W, 3)
+                points_RGB: a numpy array with shape (H*W, 4)
+                semantic: a numpy array with shape (H, W, C) with C the number of classes
+                semantic_gt: a numpy array with shape (H, W) with the ground truth class
+                time_stamp: a rospy.Time object
+        """
         # Generate the point cloud message from a point cloud of size
         point_cloud_msg = PointCloud2()
         point_cloud_msg.header.stamp = time_stamp
@@ -233,8 +243,11 @@ class SemanticNode:
         sent_n_classes = self.cfg.inference_cfg.num_classes #type: ignore
         
         # We will leave the n_forward_passes for now. Before it was used to send al the MC samples
-        self.n_forward_passes = 1
-        
+        if self.cfg.inference_type == "deterministic":
+            self.n_forward_passes = 1
+        elif self.cfg.inference_type == "mcd":
+            self.n_forward_passes = self.sensor.cfg.inference_cfg.num_mc_samples #type: ignore
+            print(f"Number of forward passes: {self.n_forward_passes}")
         # The PointField is defined with a name, the starting byte offset, the data type and number of elements.
         # rgb is encoded in the standard way so RViz can visualize it. It will be transformed to float32 with view
         # gt_class includes a single value with the ground truth class. It is of type float because it is easier to modify in the dstack
@@ -251,7 +264,7 @@ class SemanticNode:
         # Turn accumulated_pred into a numpy array with correct order 512 512 n_forward_passes n_classes
         # ADD ONE DIMENSION TO ACCUMULATED PRED TO BE CONSISTENT WITH FORWARDS PASES
         accumulated_pred_out = np.expand_dims(semantic, axis=0)
-        accumulated_pred_out = np.transpose(accumulated_pred_out, (2, 3, 0, 1))
+        accumulated_pred_out = np.transpose(accumulated_pred_out, (1, 2, 0, 3))
         accumulated_pred_out_reshaped = accumulated_pred_out.reshape((self.camera_info.height, self.camera_info.width, self.n_forward_passes * sent_n_classes), order='C')
 
         # Turn numpy matrix points_RGB of 128 128 4 of type uint8 into a numpy array of size 128 128 1 of type float32
@@ -309,8 +322,12 @@ class SemanticNode:
             points_pcd, points_RGB = self.pcd_from_rgb_depth(data["rgb"], data["depth"])
             if "semantic" in self.sensor.cfg.bridge_cfg.data_types:
                 # TODO: In the future, we can generate a pointcloud message with uncertainty / uncertainty per-class
-                pcd_msg = self.generate_point_cloud_msg(points_pcd, points_RGB, data["semantic"], data["semantic_gt"], curr_timestamp)
-                self.pub_point_cloud.publish(pcd_msg)
+                if self.sensor.cfg.inference_type == "deterministic":
+                    pcd_msg = self.generate_point_cloud_msg(points_pcd, points_RGB, data["semantic"], data["semantic_gt"], curr_timestamp)
+                    self.pub_point_cloud.publish(pcd_msg)
+                elif self.sensor.cfg.inference_type == "mcd":
+                    pcd_msg = self.generate_point_cloud_msg(points_pcd, points_RGB, data["acc_probs"], data["semantic_gt"], curr_timestamp)
+                    self.pub_point_cloud.publish(pcd_msg) 
 
         pass
 

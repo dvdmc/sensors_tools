@@ -26,6 +26,8 @@ def get_color_map(dataset_name: str, bgr: bool = True) -> np.ndarray:
         color_map = get_pascal_labels(bgr=bgr)
     elif dataset_name == "nyu2":
         color_map = get_nyu2_40_labels(bgr=bgr)
+    elif dataset_name == "nyu2_14":
+        color_map = get_nyu2_14_classes(bgr=bgr)
     elif dataset_name == "airsim":
         color_map = get_airsim_labels(bgr=bgr)
     else:

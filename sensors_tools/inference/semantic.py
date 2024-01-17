@@ -6,25 +6,30 @@ from matplotlib import pyplot as plt
 import numpy as np
 import torch
 from PIL import Image
+import cv2
 
 from torchvision import transforms
-from torchvision.models.segmentation.deeplabv3 import deeplabv3_resnet50
 
 from sensors_tools.utils.semantics_utils import get_color_map, label2rgb
+
+from . import get_model
 
 @dataclass
 class SemanticInferenceConfig:
     """
         Configuration class for the semantic inference
     """
+    model_name: str = "deeplabv3_resnet50"
+    """ Name of the model to be used """
+
     num_classes: int = 7
     """ Number of classes for the semantic inference """
 
     labels_name: str = "coco_voc"
     """ Name reference the label map (dataset or modified map: coco, coco_voc) """
 
-    pretrained_model_path: Optional[Path] = None
-    """ Path to the pretrained model """
+    weights_path: Optional[Path] = None
+    """ Path to the weights of the model """
 
     width: int = 512
     """ Default model input width """
@@ -42,17 +47,18 @@ class SemanticInference:
         self.gpu_device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
         # Get the color map
-        self.color_map = get_color_map(self.cfg.labels_name, bgr=True)
+        self.color_map = get_color_map(self.cfg.labels_name, bgr=False)
 
         # Setup the semantic inference model
-        # Load the pretrained model TODO: Optional pretrain?
-        if self.cfg.pretrained_model_path is not None:
-            pretrained_model = torch.load(self.cfg.pretrained_model_path)
-            self.model = self.model = deeplabv3_resnet50(num_classes=self.cfg.num_classes)
-            self.model.load_state_dict(pretrained_model['model_state_dict'])
-        else:
-            self.model = deeplabv3_resnet50(num_classes=self.cfg.num_classes, weights='DEFAULT')
-            print("Loaded pretrained model")
+        custom_weights: bool = self.cfg.weights_path is not None
+        self.model = get_model("deterministic", self.cfg, pretrained = not custom_weights)
+
+        # Load the pretrained model
+        if custom_weights:
+            weights = torch.load(str(self.cfg.weights_path), map_location=self.gpu_device)
+            self.model.load_state_dict(weights['model_state_dict'], strict=True)
+
+        
 
         self.model.to(self.gpu_device)
         self.model.eval()
@@ -105,6 +111,8 @@ class SemanticInference:
             Returns:
                 out: dictionary with the outputs. For this inference model: probs, img_out
         """
+        prev_width = img.shape[1]
+        prev_height = img.shape[0]
         img_t: torch.Tensor = self.transform_img(img)
         img_t = img_t.unsqueeze(0)
         img_t = img_t.to(self.gpu_device)
@@ -114,8 +122,12 @@ class SemanticInference:
 
         probs = probs[0] # Remove batch dimension
         pred = torch.argmax(probs, dim=0).cpu().numpy()
-        probs_np = probs.cpu().numpy()
+        probs_np = probs.cpu().numpy().transpose(1, 2, 0) # HxWxC for resizing
         img_out = self.overlay_label_rgb(pred, img)
+        # Resize to original size
+        probs_np = cv2.resize(probs_np, (prev_width, prev_height), interpolation = cv2.INTER_NEAREST)
+        img_out = cv2.resize(img_out, (prev_width, prev_height), interpolation = cv2.INTER_NEAREST)
+
         out = {'probs': probs_np, 'img_out': img_out}
 
         return out
