@@ -24,6 +24,8 @@ def get_color_map(dataset_name: str, bgr: bool = True) -> np.ndarray:
     """
     if dataset_name == "coco_voc":
         color_map = get_pascal_labels(bgr=bgr)
+    elif dataset_name == "pascal_8":
+        color_map = get_pascal_8_labels(bgr=bgr)
     elif dataset_name == "nyu2":
         color_map = get_nyu2_40_labels(bgr=bgr)
     elif dataset_name == "nyu2_14":

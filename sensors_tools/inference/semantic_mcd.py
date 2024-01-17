@@ -75,7 +75,7 @@ class SemanticMCDInference(SemanticInference):
         img_t: torch.Tensor = self.transform_img(img)
         img_t = img_t.unsqueeze(0)
         img_t = img_t.to(self.gpu_device)
-        accumulated_probs = torch.zeros((self.cfg.num_mc_samples, self.cfg.num_classes, img.shape[2], img.shape[3])).to(self.gpu_device)
+        accumulated_probs = torch.zeros((self.cfg.num_mc_samples, self.cfg.num_classes, img_t.shape[2], img_t.shape[3])).to(self.gpu_device)
         num_pass = 0
         with torch.no_grad():
             for n_pass in range(self.cfg.num_mc_samples):
@@ -84,7 +84,7 @@ class SemanticMCDInference(SemanticInference):
                 accumulated_probs[n_pass] = probs[0]
         
         average_probs = torch.mean(accumulated_probs, dim = 0)
-        pred = torch.max(average_probs, dim = 0)
+        pred = torch.argmax(average_probs, dim=0).cpu().numpy()
         # TODO: Variance things
         epistemic_var = torch.var(accumulated_probs, dim = 0).cpu().numpy()
         average_pred_np = average_probs.cpu().numpy()

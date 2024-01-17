@@ -263,7 +263,12 @@ class SemanticNode:
         point_cloud_msg.is_dense = True
         # Turn accumulated_pred into a numpy array with correct order 512 512 n_forward_passes n_classes
         # ADD ONE DIMENSION TO ACCUMULATED PRED TO BE CONSISTENT WITH FORWARDS PASES
-        accumulated_pred_out = np.expand_dims(semantic, axis=0)
+        if self.cfg.inference_type == "deterministic":
+            accumulated_pred_out = np.expand_dims(semantic, axis=0)
+        elif self.cfg.inference_type == "mcd":
+            accumulated_pred_out = semantic
+        else:
+            raise ValueError("Inference type not supported")
         accumulated_pred_out = np.transpose(accumulated_pred_out, (1, 2, 0, 3))
         accumulated_pred_out_reshaped = accumulated_pred_out.reshape((self.camera_info.height, self.camera_info.width, self.n_forward_passes * sent_n_classes), order='C')
 

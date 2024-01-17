@@ -13,6 +13,6 @@ bridge:
 inference:
   inference_type: 'mcd' # Type of inference. It can be 'deterministic' or 'mcd'
   weights_path: "/home/david/research/APbayDL/preliminaryBayesian/models/VOC12_7_classes_Resnet50_Drop03_AllBlocks_epoch_60"
-  num_classes: 7
-  labels_name: "coco_voc"
+  num_classes: 8
+  labels_name: "pascal_8"
   mcd_samples: 10 # Number of samples for the MCD inference

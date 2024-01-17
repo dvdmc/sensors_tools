@@ -67,8 +67,8 @@ def get_model(inference_type: InferenceType, inference_cfg: InferenceConfig, pre
         elif inference_type == "mcd":
             if pretrained:
                 raise NotImplementedError("MCD pretrained models not implemented")
-            from torchvision.models.segmentation.deeplabv3_mod import deeplabv3_resnet50
-            return deeplabv3_resnet50(num_classes=inference_cfg.num_classes)
+            from .models.deeplabv3_mcd import deeplabv3_resnet50_mcd
+            return deeplabv3_resnet50_mcd(num_classes=inference_cfg.num_classes)
         else:
             raise NotImplementedError("Inference type not implemented")
     elif model_name == "deeplabv3_resnet101":
