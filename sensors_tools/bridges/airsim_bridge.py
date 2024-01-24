@@ -114,17 +114,17 @@ class AirsimBridge(BaseBridge):
         Process the data from AirSim.
         """
         img_data = {}
-      
+
         for response in responses:
             if response.image_type == airsim.ImageType.Scene:
                 np_image = (
                     np.frombuffer(response.image_data_uint8, dtype=np.uint8)
                     .reshape(response.height, response.width, 3)
-                    .copy()
+
                 )
                 correct_image = np_image[:, :, ::-1]
-                image = Image.fromarray(correct_image)
-                img_data["rgb"] = np.array(image)
+
+                img_data["rgb"] = correct_image.copy()
             elif response.image_type == airsim.ImageType.DepthPerspective:
                 img_depth_meters = airsim.list_to_2d_float_array(
                     response.image_data_float, response.width, response.height

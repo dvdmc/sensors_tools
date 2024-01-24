@@ -4,13 +4,10 @@ from typing import List, Literal
 import rospy
 from sensors_tools.base.cameras import CameraInfo
 import tf2_ros
+import cv_bridge
 from PIL import Image
 import numpy as np
-
-import airsim #type: ignore
-
-from airsim_tools.depth_conversion import depth_conversion
-from airsim_tools.semantics import airsim2class_id
+from scipy.spatial.transform import Rotation
 
 from sensors_tools.bridges.base_bridge import BaseBridge, BaseBridgeConfig
 
@@ -72,7 +69,8 @@ class ROSBridge(BaseBridge):
         self.rgb_subscriber = rospy.Subscriber(self.cfg.rgb_topic, Image, self.rgb_callback)
 
         # TF listener
-        self.tf_listener = tf2_ros.TransformListener()
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(buffer=self.tf_buffer)
 
         # Sim config data TODO: Obtain from camera_data topic in the future
         #######################################################
@@ -92,19 +90,20 @@ class ROSBridge(BaseBridge):
         """
             Callback for the rgb image
         """
-        self.rgb = data
+        self.rgb = cv_bridge.CvBridge().imgmsg_to_cv2(data, "bgr8")
+
         # Update pose using the tf listener
-        self.pose = self.tf_listener.lookupTransform(self.cfg.poses_tf, self.cfg.origin_tf, rospy.Time(0))
+        self.pose = self.tf_buffer.lookup_transform(self.cfg.origin_tf, self.cfg.poses_tf, rospy.Time(0))
 
     def get_data(self):
         """
             Get data from the bridge
         """
         data = {}
-        if "rgb" in self.cfg.data_types:
+        if "rgb" in self.cfg.data_types and self.rgb is not None:
             data["rgb"] = self.rgb
 
-        if "pose" in self.cfg.data_types:
+        if "pose" in self.cfg.data_types and self.pose is not None:
             data["pose"] = self.pose
             
         return data

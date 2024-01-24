@@ -287,13 +287,12 @@ class SemanticNode:
         """
         # Get data
         data = self.sensor.get_data()
-        curr_timestamp = rospy.Time.now()
+        timestamp = rospy.Time.now()
 
         # Publish data
         if "pose" in self.sensor.cfg.bridge_cfg.data_types:
             translation, rotation = data["pose"]
             translation_ros, rotation_ros = self.pose_transformer.transform_function(translation, rotation)
-            timestamp = curr_timestamp
             odom_msg = self.to_odom_msg(translation_ros, rotation_ros, timestamp)
             tf_msg = self.odom_msg_to_tf_msg(odom_msg)
             self.tf_broadcaster.sendTransform(tf_msg)
@@ -328,11 +327,13 @@ class SemanticNode:
             if "semantic" in self.sensor.cfg.bridge_cfg.data_types:
                 # TODO: In the future, we can generate a pointcloud message with uncertainty / uncertainty per-class
                 if self.sensor.cfg.inference_type == "deterministic":
-                    pcd_msg = self.generate_point_cloud_msg(points_pcd, points_RGB, data["semantic"], data["semantic_gt"], curr_timestamp)
-                    self.pub_point_cloud.publish(pcd_msg)
+                    pred_data = data["semantic"]
                 elif self.sensor.cfg.inference_type == "mcd":
-                    pcd_msg = self.generate_point_cloud_msg(points_pcd, points_RGB, data["acc_probs"], data["semantic_gt"], curr_timestamp)
-                    self.pub_point_cloud.publish(pcd_msg) 
+                    pred_data = data["acc_probs"]
+                else:
+                    raise ValueError("Inference type not supported")
+                pcd_msg = self.generate_point_cloud_msg(points_pcd, points_RGB, pred_data, data["semantic_gt"], timestamp)
+                self.pub_point_cloud.publish(pcd_msg) 
 
         pass
 
