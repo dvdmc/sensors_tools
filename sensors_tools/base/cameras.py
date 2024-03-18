@@ -3,7 +3,7 @@ import numpy as np
 from dataclasses import dataclass
 
 @dataclass
-class CameraInfo:
+class CameraData:
     """
         Stores camera parameters in a unified way
     """
@@ -42,7 +42,7 @@ class CameraInfo:
     """ Tangential distortion coefficient p2 """
     
     @classmethod
-    def from_fov_h(cls, width: int, height: int, fov_h: float) -> "CameraInfo":
+    def from_fov_h(cls, width: int, height: int, fov_h: float) -> "CameraData":
         """
             Create camera info from fov_h
 
@@ -52,7 +52,7 @@ class CameraInfo:
                 fov_h: Horizontal field of view
 
             Returns:
-                CameraInfo: Camera info
+                CameraData: Camera info
         """
         cx = float(width) / 2
         cy = float(height) / 2

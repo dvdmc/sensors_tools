@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+import time
 from typing import List, Literal
 
 from PIL import Image
@@ -10,8 +11,9 @@ import airsim #type: ignore
 from airsim_tools.depth_conversion import depth_conversion
 from airsim_tools.semantics import airsim2class_id
 
-from sensors_tools.base.cameras import CameraInfo
+from sensors_tools.base.cameras import CameraData
 from sensors_tools.bridges.base_bridge import BaseBridge, BaseBridgeConfig
+from tqdm import tqdm
 
 AirsimSensorDataTypes = Literal["rgb", "depth", "semantic", "pose"]
 """
@@ -74,7 +76,7 @@ class AirsimBridge(BaseBridge):
         self.fy = self.fx * self.height / self.width
         self.client.simSetFocusAperture(7.0, "0")  # Avoids depth of field blur
         self.client.simSetFocusDistance(100.0, "0")  # Avoids depth of field blur
-        self.camera_info = CameraInfo(cx=self.cx, cy=self.cy, fx=self.fx, fy=self.fy, width=self.width, height=self.height)
+        self.camera_info = CameraData(cx=self.cx, cy=self.cy, fx=self.fx, fy=self.fy, width=self.width, height=self.height)
         #######################################################
 
         # Set the data to query
@@ -92,19 +94,22 @@ class AirsimBridge(BaseBridge):
     def setup_semantic_config(self):
         # Set all objects in the scene to label 0 in the beggining
         if self.cfg.semantic_config is not None:
-            for object_id in self.client.simListSceneObjects(): #type: ignore
-                changed = False
-                for object_str, label in self.cfg.semantic_config:
-                    if object_str in object_id:
-                        changed = True
-                        success = self.client.simSetSegmentationObjectID(object_id, label)
-                        if not success:
-                            print("Could not set segmentation object ID for {}".format(object_id))
-                        else:
-                            print("Changed object ID to {} for {}".format(label, object_id))
-                        break
-                if not changed:  # TODO: Check if this is faster than just setting all objects to 0
-                    self.client.simSetSegmentationObjectID(object_id, 0)
+            # Set everything to ID 0 using regular expression
+            success = self.client.simSetSegmentationObjectID(".*", 0, True)
+
+            # To change the remaining we use the semantic config.
+            # For each label, we will create a regular expression 
+            # that matches all the objects containing the label as a substring
+            regexes = {}
+            for label, label_id in self.cfg.semantic_config:
+                if label not in regexes:
+                    regexes[label] = ".*" + label + ".*"
+                else:
+                    regexes[label] += "|.*" + label + ".*"
+            print("Setting object IDs")
+            for label, label_id in tqdm(self.cfg.semantic_config):
+                success = self.client.simSetSegmentationObjectID(regexes[label], label_id, True)
+                
             print("Finished setting object IDs")
 
     def process_img_responses(

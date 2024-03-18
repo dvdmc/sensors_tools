@@ -9,7 +9,7 @@ import cv2
 import pandas as pd
 from scipy.spatial.transform import Rotation
 
-from sensors_tools.base.cameras import CameraInfo
+from sensors_tools.base.cameras import CameraData
 
 from .base_bridge import BaseBridge, BaseBridgeConfig
 
@@ -111,9 +111,9 @@ class ScanNetBridge(BaseBridge):
         self.cy_color = self.cy_color*ratio_height
         self.fx_color = self.fx_color*ratio_width
         self.fy_color = self.fy_color*ratio_height
-        self.camera_info = CameraInfo(cx=self.cx_color, cy=self.cy_color, fx=self.fx_color, fy=self.fy_color, width=self.width_color, height=self.height_color) 
+        self.camera_info = CameraData(cx=self.cx_color, cy=self.cy_color, fx=self.fx_color, fy=self.fy_color, width=self.width_color, height=self.height_color) 
         print("CAMERA INFO: ", self.camera_info)
-        self.camera_info_depth = CameraInfo(cx=self.cx_depth, cy=self.cy_depth, fx=self.fx_depth, fy=self.fy_depth, width=self.width_depth, height=self.height_depth)
+        self.camera_info_depth = CameraData(cx=self.cx_depth, cy=self.cy_depth, fx=self.fx_depth, fy=self.fy_depth, width=self.width_depth, height=self.height_depth)
         #######################################################
         label_mapping = pd.read_csv(self.cfg.tsv_path, sep='\t')
         NYU_classes = label_mapping['nyu40id'].values

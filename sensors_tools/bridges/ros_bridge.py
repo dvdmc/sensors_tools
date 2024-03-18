@@ -2,9 +2,10 @@ from dataclasses import dataclass, field
 from typing import List, Literal
 
 import rospy
-from sensors_tools.base.cameras import CameraInfo
+from sensors_tools.base.cameras import CameraData
 import tf2_ros
 import cv_bridge
+from sensor_msgs.msg import Image, CameraInfo
 from PIL import Image
 import numpy as np
 from scipy.spatial.transform import Rotation
@@ -14,17 +15,19 @@ from sensors_tools.bridges.base_bridge import BaseBridge, BaseBridgeConfig
 ROSSensorDataTypes = Literal["rgb", "pose"]
 """
     List of sensor data to query.
-    - "poses": query poses.
+    - "pose": query poses.
     - "rgb": query rgb images.
     - "depth": query depth images.
     - "semantic": query semantic images.
 """
 
+
 @dataclass
 class ROSBridgeConfig(BaseBridgeConfig):
     """
-        Configuration class for AirsimBridge
+    Configuration class for AirsimBridge
     """
+
     data_types: List[ROSSensorDataTypes] = field(default_factory=list, metadata={"default": ["rgb", "pose"]})
     """ Data types to query """
 
@@ -46,49 +49,63 @@ class ROSBridgeConfig(BaseBridgeConfig):
     fov_h: float = 54.4
     """ Horizontal field of view """
 
+
 class ROSBridge(BaseBridge):
     """
-        Bridge for ROS
+    Bridge for ROS
     """
+
     def __init__(self, cfg: ROSBridgeConfig):
         """
-            Constructor
+        Constructor
         """
         super().__init__(cfg)
         self.cfg = cfg
 
     def setup(self):
         """
-            Setup the bridge
+        Setup the bridge
         """
         # Members
         self.rgb = None
         self.pose = None
 
         # Init ros subscribers
-        self.rgb_subscriber = rospy.Subscriber(self.cfg.rgb_topic, Image, self.rgb_callback)
-
+        if "rgb" in self.cfg.data_types:
+            self.rgb_sub = rospy.Subscriber(self.cfg.rgb_topic, Image, self.rgb_callback)
+            self.camera_info_sub = rospy.Subscriber("/camera/rgb/camera_info", CameraInfo, self.camera_info_callback)
         # TF listener
-        self.tf_buffer = tf2_ros.Buffer()
-        self.tf_listener = tf2_ros.TransformListener(buffer=self.tf_buffer)
+        if "pose" in self.cfg.data_types:
+            self.tf_buffer = tf2_ros.Buffer()
+            self.tf_listener = tf2_ros.TransformListener(buffer=self.tf_buffer)
 
-        # Sim config data TODO: Obtain from camera_data topic in the future
-        #######################################################
         # RELEVANT CAMERA DATA
-        self.width = self.cfg.width
-        self.height = self.cfg.height
-        self.fov_h = self.cfg.fov_h
-        self.cx = float(self.width) / 2
-        self.cy = float(self.height) / 2
-        fov_h_rad = self.fov_h * np.pi / 180.0
-        self.fx = self.cx / (np.tan(fov_h_rad / 2))
-        self.fy = self.fx * self.height / self.width
-        self.camera_info = CameraInfo(cx=self.cx, cy=self.cy, fx=self.fx, fy=self.fy, width=self.cfg.width, height=self.cfg.height)
-        #######################################################
+        # Wait for the camera_info topic to be published
+        self.has_camera_info = False
+        while not self.has_camera_info:
+            rospy.loginfo("Waiting for camera_info topic to be published")
+            rospy.sleep(1)
+        
 
-    def rgb_callback(self, data):
+    def camera_info_callback(self, data: CameraInfo):
         """
-            Callback for the rgb image
+        Callback for the camera info
+        """
+        self.width = data.width
+        self.height = data.height
+        self.cx = data.K[2]
+        self.cy = data.K[5]
+        self.fx = data.K[0]
+        self.fy = data.K[4]
+
+        self.camera_info = CameraData(
+            cx=self.cx, cy=self.cy, fx=self.fx, fy=self.fy, width=self.width, height=self.height
+        )
+        self.has_camera_info = True
+
+    def rgb_callback(self, data: Image):
+        """
+        Callback for the rgb image
         """
         self.rgb = cv_bridge.CvBridge().imgmsg_to_cv2(data, "bgr8")
 
@@ -97,7 +114,7 @@ class ROSBridge(BaseBridge):
 
     def get_data(self):
         """
-            Get data from the bridge
+        Get data from the bridge
         """
         data = {}
         if "rgb" in self.cfg.data_types and self.rgb is not None:
@@ -105,5 +122,5 @@ class ROSBridge(BaseBridge):
 
         if "pose" in self.cfg.data_types and self.pose is not None:
             data["pose"] = self.pose
-            
+
         return data

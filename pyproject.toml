@@ -12,7 +12,10 @@ dependencies=[
     "numpy",
     "matplotlib",
     "Pillow",
+    "pyyaml",
 ]
+# TODO: Add optional dependency rospkg
+# Indicate in readme: pip3 install torch torchvision torchaudio
 
 [tool.setuptools]
 packages = ["sensors_tools"]

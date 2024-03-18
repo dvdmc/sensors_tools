@@ -86,7 +86,7 @@ class SemanticInference:
         # r[self.pred_class_prob < 0.5] = 0
         r = Image.fromarray(r)
         # Convert the image to RGBA for merging with RGB image
-        r = r.convert('RGBA').resize((self.cfg.width, self.cfg.height), resample=Image.Resampling.NEAREST)
+        r = r.convert('RGBA').resize((self.cfg.width, self.cfg.height), resample=Image.NEAREST)
         datas = r.getdata()
         newData = []
         for item in datas:

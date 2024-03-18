@@ -13,7 +13,7 @@ from PIL import Image
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from sensors_tools.base.cameras import CameraInfo
+from sensors_tools.base.cameras import CameraData
 from sensors_tools.bridges.base_bridge import BaseBridge, BaseBridgeConfig
 
 TestSensorDataTypes = Literal["rgb", "depth", "semantic", "pose"]
@@ -75,7 +75,7 @@ class TestBridge(BaseBridge):
             camera_data = json.load(f)
         
         print("Camera data: ", camera_data)
-        self.camera_info = CameraInfo(cx=camera_data["cx"], cy=camera_data["cy"], fx=camera_data["fx"], fy=camera_data["fy"], width=self.cfg.width, height=self.cfg.height)
+        self.camera_info = CameraData(cx=camera_data["cx"], cy=camera_data["cy"], fx=camera_data["fx"], fy=camera_data["fy"], width=self.cfg.width, height=self.cfg.height)
         #######################################################
     
 

@@ -334,7 +334,7 @@ class SemanticNode:
                     raise ValueError("Inference type not supported")
                 pcd_msg = self.generate_point_cloud_msg(points_pcd, points_RGB, pred_data, data["semantic_gt"], timestamp)
                 self.pub_point_cloud.publish(pcd_msg) 
-
+                print("Send point cloud with: ", pcd_msg.width, " points")
         pass
 
     def move_srv(self, req: SetBool) -> SetBoolResponse:
