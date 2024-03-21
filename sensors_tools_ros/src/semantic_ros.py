@@ -50,30 +50,32 @@ class SemanticNode:
         self.camera_info = self.sensor.bridge.camera_info
         #######################################################
         # ROS CAMERA DATA
-        self.camera_odom_frame_id = self.camera_name + "_odom"
+        self.odom_frame_id = "/odom"
         
         self.tf_broadcaster = TransformBroadcaster()
         self.static_tf_broadcaster = StaticTransformBroadcaster()
 
         #TODO: Offset init should be provided by the bridge
         self.static_tf = []
-        static_start_transform = TransformStamped()
-        static_start_transform.header.stamp = rospy.Time.now()
-        static_start_transform.header.frame_id = "map"
-        static_start_transform.child_frame_id = self.camera_odom_frame_id
-        static_start_transform.transform.translation.x = self.offset_init[0]
-        static_start_transform.transform.translation.y = self.offset_init[1]
-        static_start_transform.transform.translation.z = self.offset_init[2]
-        static_start_transform.transform.rotation.x = 0
-        static_start_transform.transform.rotation.y = 0
-        static_start_transform.transform.rotation.z = 0
-        static_start_transform.transform.rotation.w = 1
-        self.static_tf.append(static_start_transform)
+        if self.is_offset:
+            static_start_transform = TransformStamped()
+            static_start_transform.header.stamp = rospy.Time.now()
+            static_start_transform.header.frame_id = "map"
+            static_start_transform.child_frame_id = self.sensor_frame_id
+            static_start_transform.transform.translation.x = self.offset_init[0]
+            static_start_transform.transform.translation.y = self.offset_init[1]
+            static_start_transform.transform.translation.z = self.offset_init[2]
+            static_start_transform.transform.rotation.x = 0
+            static_start_transform.transform.rotation.y = 0
+            static_start_transform.transform.rotation.z = 0
+            static_start_transform.transform.rotation.w = 1
+            self.static_tf.append(static_start_transform)
         #######################################################
 
         # ROS setup depending on the queried sensors
         if "pose" in self.sensor.cfg.bridge_cfg.data_types:
             self.pub_camera_odometry = rospy.Publisher(f"/{self.camera_name}/odom", Odometry, queue_size=10)
+            self.pose_timer = rospy.Timer(rospy.Duration(0.1), self.update_and_publish_odom)
 
         if "rgb" in self.sensor.cfg.bridge_cfg.data_types:
             self.pub_rgb = rospy.Publisher(f'/{self.camera_name}/rgb/image_raw', ImageMsg, queue_size=10)
@@ -81,7 +83,8 @@ class SemanticNode:
         if "depth" in self.sensor.cfg.bridge_cfg.data_types:
             self.pub_depth = rospy.Publisher(f'/{self.camera_name}/depth/image_raw', ImageMsg, queue_size=10)
             self.pub_point_cloud = rospy.Publisher(f'/{self.camera_name}/point_cloud', PointCloud2, queue_size=10)
-
+            if self.publish_freespace_point_cloud:
+                self.pub_freespace_point_cloud = rospy.Publisher(f'/{self.camera_name}/freespace_point_cloud', PointCloud2, queue_size=10)
         if "semantic" in self.sensor.cfg.bridge_cfg.data_types:
             self.pub_semantic_gt = rospy.Publisher(f'/{self.camera_name}/semantic_gt/image_raw', ImageMsg, queue_size=10)
             self.pub_semantic = rospy.Publisher(f'/{self.camera_name}/semantic/image_raw', ImageMsg, queue_size=10)
@@ -120,9 +123,13 @@ class SemanticNode:
 
         if "depth" in self.cfg.bridge_cfg.data_types:
             self.stride = rospy.get_param("~stride", 1)
+            self.max_depth = rospy.get_param("~max_depth", 10.0)
+            self.publish_freespace_point_cloud = rospy.get_param("~publish_freespace_point_cloud", False)
 
         self.frequency = rospy.get_param("~frequency", 10.0)
         self.camera_name = rospy.get_param("~camera_name", "cam0")
+        self.sensor_frame_id = rospy.get_param("~sensor_frame_id", "camera_link")
+        self.is_offset = rospy.get_param("~is_offset", False)
         self.offset_init = rospy.get_param("~offset_init", [0.,0.,0.])
 
 
@@ -157,9 +164,9 @@ class SemanticNode:
             Convert a 4x4 pose matrix to a ROS Odometry message
         """
         odom_msg = Odometry()
-        odom_msg.header.frame_id = self.camera_odom_frame_id
+        odom_msg.header.frame_id = self.sensor_frame_id
         odom_msg.header.stamp = timestamp
-        odom_msg.child_frame_id = "base_link"
+        odom_msg.child_frame_id = self.sensor_frame_id
         odom_msg.pose.pose.position.x = translation[0]
         odom_msg.pose.pose.position.y = translation[1]
         odom_msg.pose.pose.position.z = translation[2]
@@ -193,6 +200,15 @@ class SemanticNode:
             static_tf.header.stamp = timestamp
             self.static_tf_broadcaster.sendTransform(static_tf)
     
+    def update_and_publish_odom(self, event):
+        # Update the odometry
+        translation, rotation = self.sensor.bridge.get_pose()
+        translation_ros, rotation_ros = self.pose_transformer.transform_function(translation, rotation)
+        odom_msg = self.to_odom_msg(translation_ros, rotation_ros, rospy.Time.now())
+        self.tf_broadcaster.sendTransform(self.odom_msg_to_tf_msg(odom_msg))
+        self.pub_camera_odometry.publish(odom_msg)
+        self.update_and_publish_static_transforms(odom_msg.header.stamp)
+
     def pcd_from_rgb_depth(self, rgb: np.ndarray, depth: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """A function that converts an rgb image and a depth image to a point cloud
         Depth image is measured with respect to image plane. 
@@ -210,9 +226,9 @@ class SemanticNode:
         W = depth_np.shape[1]
         H = depth_np.shape[0]
         columns, rows = np.meshgrid(np.linspace(0, W-1, num=int(W/self.stride)), np.linspace(0, H-1, num=int(H/self.stride))) # type: ignore
-        point_depth = depth_np[::self.stride, ::self.stride]
-        y = -(columns - self.camera_info.cx) * point_depth / self.camera_info.fx # Originally x : Now -y
-        z = -(rows - self.camera_info.cy) * point_depth / self.camera_info.fy # Originally y : Now -z
+        point_depth = depth_np[::self.stride, ::self.stride] / 1000
+        y = -(columns - self.camera_info.cx) * point_depth / (self.camera_info.fx) # Originally x : Now -y
+        z = -(rows - self.camera_info.cy) * point_depth / (self.camera_info.fy) # Originally y : Now -z
         x = point_depth # Originally z : Now x
         pcd = np.dstack((x, y, z)).astype(np.float32)
         colors = rgb_np[::self.stride, ::self.stride, :] * 255
@@ -222,6 +238,29 @@ class SemanticNode:
         colors = np.dstack((colors[:, :, 2], colors[:, :, 1], colors[:, :, 0], np.ones((colors.shape[0], colors.shape[1], 1), dtype=np.uint8) * 255))
         return pcd, colors
 
+    def generate_freespace_point_cloud_msg(self, points_pcd: np.ndarray, time_stamp: rospy.Time) -> PointCloud2:
+        """
+            Find the freespace points in the point cloud that are further than 
+            max_depth and set them to that depth sothe volumetric map can use 
+            the freespace information
+        """
+        max_depth = self.sensor.cfg.max_depth
+        points_pcd[points_pcd[:, 2] > max_depth, 2] = max_depth
+        freespace_point_cloud_msg = PointCloud2()
+        freespace_point_cloud_msg.header.stamp = rospy.Time.now()
+        freespace_point_cloud_msg.header.frame_id = self.sensor_frame_id
+        freespace_point_cloud_msg.height = 1
+        freespace_point_cloud_msg.width = points_pcd.shape[0] * points_pcd.shape[1]
+        freespace_point_cloud_msg.fields = [PointField('x', 0, PointField.FLOAT32, 1),
+                                            PointField('y', 4, PointField.FLOAT32, 1),
+                                            PointField('z', 8, PointField.FLOAT32, 1)]
+        freespace_point_cloud_msg.is_bigendian = False
+        freespace_point_cloud_msg.point_step = 12
+        freespace_point_cloud_msg.is_dense = True
+        freespace_point_cloud_msg.data += points_pcd.tobytes()
+        return freespace_point_cloud_msg
+
+    
     def generate_point_cloud_msg(self, points_pcd: np.ndarray, points_RGB: np.ndarray, semantic: np.ndarray, semantic_gt: np.ndarray, time_stamp: rospy.Time):
         """
             Generate a point cloud message with semantics using the pcd from the RGB-D images
@@ -235,11 +274,17 @@ class SemanticNode:
         """
         # Generate the point cloud message from a point cloud of size
         point_cloud_msg = PointCloud2()
+        freespace_point_cloud_msg = PointCloud2()
         point_cloud_msg.header.stamp = time_stamp
-        point_cloud_msg.header.frame_id = "base_link"
+        freespace_point_cloud_msg.header.stamp = time_stamp
+        point_cloud_msg.header.frame_id = self.sensor_frame_id
+        freespace_point_cloud_msg.header.frame_id = self.sensor_frame_id
         point_cloud_msg.height = 1
-        point_cloud_msg.width = points_pcd.shape[0] * points_pcd.shape[1]
+        freespace_point_cloud_msg.height = 1
         
+        point_cloud_msg.width = points_pcd.shape[0] * points_pcd.shape[1]
+        freespace_point_cloud_msg.width = points_pcd.shape[0] * points_pcd.shape[1]
+
         sent_n_classes = self.cfg.inference_cfg.num_classes #type: ignore
         
         # We will leave the n_forward_passes for now. Before it was used to send al the MC samples
@@ -287,6 +332,10 @@ class SemanticNode:
         """
         # Get data
         data = self.sensor.get_data()
+        if data is None:
+            print("Sensor is not ready")
+            return
+        
         timestamp = rospy.Time.now()
 
         # Publish data
@@ -324,6 +373,10 @@ class SemanticNode:
                 print(e)
             # Publish point cloud
             points_pcd, points_RGB = self.pcd_from_rgb_depth(data["rgb"], data["depth"])
+            if self.publish_freespace_point_cloud:
+                pcd_msg = self.generate_freespace_point_cloud_msg(points_pcd, timestamp)
+                self.pub_freespace_point_cloud.publish(pcd_msg)
+                
             if "semantic" in self.sensor.cfg.bridge_cfg.data_types:
                 # TODO: In the future, we can generate a pointcloud message with uncertainty / uncertainty per-class
                 if self.sensor.cfg.inference_type == "deterministic":
@@ -334,7 +387,7 @@ class SemanticNode:
                     raise ValueError("Inference type not supported")
                 pcd_msg = self.generate_point_cloud_msg(points_pcd, points_RGB, pred_data, data["semantic_gt"], timestamp)
                 self.pub_point_cloud.publish(pcd_msg) 
-                print("Send point cloud with: ", pcd_msg.width, " points")
+                # print("Send point cloud with: ", pcd_msg.width, " points")
         pass
 
     def move_srv(self, req: SetBool) -> SetBoolResponse:

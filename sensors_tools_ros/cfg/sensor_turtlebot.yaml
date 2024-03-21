@@ -1,0 +1,19 @@
+frequency: 10.0 # Frequency of the sensor in Hz. -1 means that we are using a service instead of a timer
+stride: 8 # Stride of the sensor for generating the pointcloud
+# Config for bridge is in sensors_tools/bridge/{bridge_type}.py
+bridge:
+  bridge_type: 'ros' # Source of the sensor. It can be 'airsim' or 'ros'
+  data_types: ['rgb', 'depth', 'semantic'] # Data types to be published. It can be 'rgb', 'depth', 'segmentation', 'pointcloud'
+  origin_tf: "map"
+  poses_tf: "camera_link"
+  rgb_topic: "/camera/color/image_raw"
+  camera_info_topic: "/camera/color/camera_info"
+  depth_topic: "/camera/aligned_depth_to_color/image_raw"
+
+# Config for inference is in sensors_tools/inference/{inference_type}.py
+inference:
+  inference_type: 'deterministic' # Type of inference. It can be 'deterministic' or 'mcd'
+  # weights_path: "/home/david/research/APbayDL/preliminaryBayesian/models/VOC12_7_classes_Resnet50_Drop03_AllBlocks_epoch_60"
+  num_classes: 21
+  labels_name: "coco_voc"
+  mcd_samples: 10 # Number of samples for the MCD inference

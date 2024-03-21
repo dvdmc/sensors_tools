@@ -40,7 +40,10 @@ class SemanticInferenceSensor:
             self.inference_model = get_inference(self.cfg.inference_type, self.cfg.inference_cfg)
             self.inference_model.setup()
 
-    def get_data(self):
+    def get_data(self) -> Optional[dict]:
+        if not self.bridge.ready:
+            return None
+        
         data = self.bridge.get_data()
         img = data["rgb"]
         if "semantic" in self.cfg.bridge_cfg.data_types:

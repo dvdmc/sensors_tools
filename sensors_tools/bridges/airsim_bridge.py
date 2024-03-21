@@ -54,6 +54,7 @@ class AirsimBridge(BaseBridge):
         """
         super().__init__(cfg)
         self.cfg = cfg
+        self.ready = False
 
     def setup(self):
         """
@@ -77,6 +78,7 @@ class AirsimBridge(BaseBridge):
         self.client.simSetFocusAperture(7.0, "0")  # Avoids depth of field blur
         self.client.simSetFocusDistance(100.0, "0")  # Avoids depth of field blur
         self.camera_info = CameraData(cx=self.cx, cy=self.cy, fx=self.fx, fy=self.fy, width=self.width, height=self.height)
+        self.depth_camera_info = CameraData(cx=self.cx, cy=self.cy, fx=self.fx, fy=self.fy, width=self.width, height=self.height)
         #######################################################
 
         # Set the data to query
@@ -91,6 +93,8 @@ class AirsimBridge(BaseBridge):
         if "semantic" in self.cfg.data_types:
             self.setup_semantic_config()
     
+        self.ready = True
+
     def setup_semantic_config(self):
         # Set all objects in the scene to label 0 in the beggining
         if self.cfg.semantic_config is not None:
