@@ -1,4 +1,4 @@
-frequency: -1.0 # Frequency of the sensor in Hz. -1 means that we are using a service instead of a timer
+frequency: 10.0 # Frequency of the sensor in Hz. -1 means that we are using a service instead of a timer
 stride: 8 # Stride of the sensor for generating the pointcloud
 # Config for bridge is in sensors_tools/bridge/{bridge_type}.py
 bridge:

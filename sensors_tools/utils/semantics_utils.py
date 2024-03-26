@@ -70,6 +70,31 @@ def get_pascal_labels(bgr=False):
         color_map = color_map[:, ::-1]
     return color_map
 
+def get_pascal_labels_names():
+    return [
+        "background",
+        "aeroplane",
+        "bicycle",
+        "bird",
+        "boat",
+        "bottle",
+        "bus",
+        "car",
+        "cat",
+        "chair",
+        "cow",
+        "diningtable",
+        "dog",
+        "horse",
+        "motorbike",
+        "person",
+        "potted plant",
+        "sheep",
+        "sofa",
+        "train",
+        "tv/monitor",
+    ]
+
 # Get pascal labels without background
 def get_pascal_labels_wo_background(bgr=False):
     """Load the mapping that associates pascal classes with label colors

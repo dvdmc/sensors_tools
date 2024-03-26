@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 import time
 from typing import List, Literal
+from threading import Lock
 
 from PIL import Image
 import numpy as np
@@ -63,6 +64,8 @@ class AirsimBridge(BaseBridge):
         # Data acquisition configuration
         self.client = airsim.VehicleClient()
         self.client.confirmConnection()
+        # Clien mutex
+        self.client_mutex = Lock()
         
         # Sim config data TODO: Move to config file
         #######################################################
@@ -158,15 +161,32 @@ class AirsimBridge(BaseBridge):
         """
         data = {}
         if "pose" in self.cfg.data_types:
+            # Acquire the client mutex
+            self.client_mutex.acquire()
             pose = self.client.simGetVehiclePose()
+            self.client_mutex.release()
             translation = np.array([pose.position.x_val, pose.position.y_val, pose.position.z_val])
             quat = np.array([pose.orientation.x_val, pose.orientation.y_val, pose.orientation.z_val, pose.orientation.w_val])
             rotation = Rotation.from_quat(quat)
             data["pose"] = (translation, rotation)
 
+        self.client_mutex.acquire()
         responses = self.client.simGetImages(self.query_data)
+        self.client_mutex.release()
         img_data = self.process_img_responses(responses)
 
         data.update(img_data)
 
         return data
+    
+    def get_pose(self):
+        """
+            Get pose from the bridge
+        """
+        self.client_mutex.acquire()
+        pose = self.client.simGetVehiclePose()
+        self.client_mutex.release()
+        translation = np.array([pose.position.x_val, pose.position.y_val, pose.position.z_val])
+        quat = np.array([pose.orientation.x_val, pose.orientation.y_val, pose.orientation.z_val, pose.orientation.w_val])
+        rotation = Rotation.from_quat(quat)
+        return (translation, rotation)

@@ -185,7 +185,7 @@ class ROSBridge(BaseBridge):
         """
         Callback for the depth image
         """
-        self.depth = self.bridge.imgmsg_to_cv2(data, "passthrough")
+        self.depth = self.bridge.imgmsg_to_cv2(data, "passthrough") / 1000.0 # Convert to meters
 
     def get_data(self):
         """
