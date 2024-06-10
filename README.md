@@ -3,6 +3,12 @@
 This repository offers a generic sensor interface for RGB-D semantic ROS messages.
 It mainly tackles the problem of bridging semantic measurements from simulators, datasets, other ROS frameworks.
 
+<p float="center" align="middle">
+  <img src="media/rgb.png" width="20%" hspace="20"/>
+  <img src="media/depth.png" width="20%" hspace="20"/> 
+  <img src="media/semantic.png" width="20%" hspace="20"/>
+</p>
+
 ## Installation
 
 Clone the repository with:
