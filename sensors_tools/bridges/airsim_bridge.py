@@ -92,10 +92,9 @@ class AirsimBridge(BaseBridge):
             self.query_data.append(airsim.ImageRequest("0", airsim.ImageType.DepthPerspective, True, False))
         if "semantic" in self.cfg.data_types:
             self.query_data.append(airsim.ImageRequest("0", airsim.ImageType.Segmentation, False, False))
-
         if "semantic" in self.cfg.data_types:
             self.setup_semantic_config()
-    
+            
         self.ready = True
 
     def setup_semantic_config(self):
@@ -169,12 +168,10 @@ class AirsimBridge(BaseBridge):
             quat = np.array([pose.orientation.x_val, pose.orientation.y_val, pose.orientation.z_val, pose.orientation.w_val])
             rotation = Rotation.from_quat(quat)
             data["pose"] = (translation, rotation)
-
         self.client_mutex.acquire()
         responses = self.client.simGetImages(self.query_data)
         self.client_mutex.release()
         img_data = self.process_img_responses(responses)
-
         data.update(img_data)
 
         return data

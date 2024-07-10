@@ -1,7 +1,7 @@
 <launch>
 
     <node pkg="sensors_tools_ros" type="semantic_node.py" name="semantic_sensor" output="screen">
-        <rosparam command="load" file="$(find sensors_tools_ros)/cfg/sensor.yaml" />
+        <rosparam command="load" file="$(find sensors_tools_ros)/cfg/sensor_airsim.yaml" />
     </node>
 
 </launch>

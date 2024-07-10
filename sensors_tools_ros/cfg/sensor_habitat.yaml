@@ -2,12 +2,13 @@ frequency: 10.0 # Frequency of the sensor in Hz. -1 means that we are using a se
 stride: 8 # Stride of the sensor for generating the pointcloud
 # Config for bridge is in sensors_tools/bridge/{bridge_type}.py
 bridge:
-  bridge_type: 'airsim' # Source of the sensor. It can be 'airsim' or 'ros'
-  data_types: ['rgb', 'depth', 'semantic', 'pose'] # Data types to be published. It can be 'rgb', 'depth', 'segmentation', 'pointcloud'
-  dataset_path: '/media/david/git/phd-utils/phd_utils/sensors_tools/sensors_tools/bridges/test_data/dataset'
-  width: 512
-  height: 512
-  semantic_config: [["Bottle", 5], ["bottle", 5], ["WineBottle", 5], ["palm", 16], ["plant", 16], ["Plant", 16], ["table", 11], ["Table", 11], ["Defenbakh", 16], ["flower", 16], ["Sofa", 18], ["screen", 20], ["Chair", 9], ["chair", 9]]
+  bridge_type: 'ros' # Source of the sensor. It can be 'airsim' or 'ros'
+  data_types: ['rgb', 'depth', 'pose'] # Data types to be published. It can be 'rgb', 'depth', 'segmentation', 'pointcloud'
+  origin_tf: "map"
+  poses_tf: "body"
+  rgb_topic: "/habitat/rgb/image_raw"
+  camera_info_topic: "/habitat/rgb/camera_info"
+  depth_topic: "/habitat/depth/image_raw"
 
 # Config for inference is in sensors_tools/inference/{inference_type}.py
 inference:

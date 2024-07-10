@@ -58,32 +58,47 @@ def get_model(inference_type: InferenceType, inference_cfg: InferenceConfig, pre
 
     if model_name == "deeplabv3_resnet50":
         if inference_type == "deterministic":
+        
             from torchvision.models.segmentation.deeplabv3 import deeplabv3_resnet50, DeepLabV3_ResNet50_Weights
             if pretrained:
-                weights = DeepLabV3_ResNet50_Weights.DEFAULT
+                if inference_cfg.weights_path is not None:
+                    from .models.deeplabv3.deeplab_classifier import deeplabv3_resnet50_MCD
+                    weights = torch.load(str(inference_cfg.weights_path), weights_only=True)
+                    model = deeplabv3_resnet50_MCD(num_classes=inference_cfg.num_classes) # We assume this at the moment for the active semantic paper
+                    model.load_state_dict(weights, strict=True)
+                else:
+                    weights = DeepLabV3_ResNet50_Weights.DEFAULT
+                    model = deeplabv3_resnet50(num_classes=inference_cfg.num_classes, weights=weights)
             else:
-                weights = None
-            return deeplabv3_resnet50(num_classes=inference_cfg.num_classes, weights=weights)
+                model = deeplabv3_resnet50(num_classes=inference_cfg.num_classes, weights=None)
+            return model
+        
         elif inference_type == "mcd":
+        
+            from .models.deeplabv3.deeplab_classifier import deeplabv3_resnet50_MCD
+            model = deeplabv3_resnet50_MCD(num_classes=inference_cfg.num_classes)
             if pretrained:
-                raise NotImplementedError("MCD pretrained models not implemented")
-            from .models.deeplabv3_mcd import deeplabv3_resnet50_mcd
-            return deeplabv3_resnet50_mcd(num_classes=inference_cfg.num_classes)
+                weights = torch.load(str(inference_cfg.weights_path), weights_only=True)
+                model.load_state_dict(weights, strict=True)
+            return model
+        
         else:
             raise NotImplementedError("Inference type not implemented")
+    
     elif model_name == "deeplabv3_resnet101":
         if inference_type == "deterministic":
             from torchvision.models.segmentation.deeplabv3 import deeplabv3_resnet101, DeepLabV3_ResNet101_Weights
             if pretrained:
-                weights = DeepLabV3_ResNet101_Weights.DEFAULT
+                if inference_cfg.weights_path is not None:
+                    weights = torch.load(str(inference_cfg.weights_path), weights_only=True)
+                    model = deeplabv3_resnet101(num_classes=inference_cfg.num_classes, weights=None)
+                else:
+                    weights = DeepLabV3_ResNet101_Weights.DEFAULT
             else:
                 weights = None
             return deeplabv3_resnet101(num_classes=inference_cfg.num_classes, weights=weights) 
         elif inference_type == "mcd":
-            from torchvision.models.segmentation.deeplabv3_mod import deeplabv3_resnet101
-            if pretrained:
-                raise NotImplementedError("MCD pretrained models not implemented")
-            return deeplabv3_resnet101(num_classes=inference_cfg.num_classes)
+            raise NotImplementedError(f"Model not type not implemented for: {model_name}")
         else:
             raise NotImplementedError("Inference type not implemented")
     else:

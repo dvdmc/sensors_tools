@@ -2,6 +2,9 @@ from dataclasses import dataclass
 from typing import List, Literal
 from abc import ABC, abstractmethod
 
+import numpy as np
+from scipy.spatial.transform import Rotation
+
 @dataclass
 class BaseBridgeConfig:
     """
@@ -38,7 +41,7 @@ class BaseBridge(ABC):
         """
         pass
 
-    def move(self) -> None:
+    def move(self, traslation: np.ndarray, rotation: Rotation):
         """
             Apply a movement to the bridge
             This function should be used when the bridge

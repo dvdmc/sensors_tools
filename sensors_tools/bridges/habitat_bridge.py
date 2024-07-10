@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 import time
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, Tuple
 from threading import Lock
 
 from PIL import Image
@@ -32,14 +32,8 @@ class HabitatBridgeConfig(BaseBridgeConfig):
     data_types: List[HabitatSensorDataTypes] = field(default_factory=list, metadata={"default": ["rgb", "pose"]})
     """ Data types to query """
 
-    semantic_config: List[List] = field(default_factory=list, metadata={"default": []})
-    """ Semantic configuration """
-
     scene: str = "0"
     """ Scene path """
-
-    scene_dataset_config_file: Optional[str] = None
-    """ Scene dataset configuration file """
 
     enable_physics: bool = True
     """ Enable physics """
@@ -52,6 +46,9 @@ class HabitatBridgeConfig(BaseBridgeConfig):
 
     height: int = 512
     """ Image height """
+
+    hfov: float = 90.0
+    """ Horizontal field of view """
 
     sensor_height: float = 1.5
     """ Height of the sensor in meters, relative to the agent"""
@@ -83,18 +80,18 @@ class HabitatBridge(BaseBridge):
         sim_cfg = habitat_sim.SimulatorConfiguration()
         sim_cfg.scene_id = self.cfg.scene
         sim_cfg.gpu_device_id = 0
-        sim_cfg.scene_id = self.cfg.scene
-        sim_cfg.scene_dataset_config_file = self.cfg.scene_dataset_config_file 
         sim_cfg.enable_physics = self.cfg.enable_physics
 
         # Note: all sensors must have the same resolution
         sensor_specs = []
-
+        self.cfg.data_sensor_dict = {}
         if "rgb" in self.cfg.data_types:
             color_sensor_spec = habitat_sim.CameraSensorSpec()
             color_sensor_spec.uuid = "color_sensor"
+            self.cfg.data_sensor_dict["rgb"] = color_sensor_spec.uuid
             color_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
             color_sensor_spec.resolution = [self.cfg.height, self.cfg.width]
+            color_sensor_spec.hfov = self.cfg.hfov
             color_sensor_spec.position = [0.0, self.cfg.sensor_height, 0.0]
             color_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
             sensor_specs.append(color_sensor_spec)
@@ -103,8 +100,10 @@ class HabitatBridge(BaseBridge):
         if "depth" in self.cfg.data_types:
             depth_sensor_spec = habitat_sim.CameraSensorSpec()
             depth_sensor_spec.uuid = "depth_sensor"
+            self.cfg.data_sensor_dict["depth"] = depth_sensor_spec.uuid
             depth_sensor_spec.sensor_type = habitat_sim.SensorType.DEPTH
             depth_sensor_spec.resolution = [self.cfg.height, self.cfg.width]
+            depth_sensor_spec.hfov = self.cfg.hfov
             depth_sensor_spec.position = [0.0, self.cfg.sensor_height, 0.0]
             depth_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
             sensor_specs.append(depth_sensor_spec)
@@ -113,8 +112,10 @@ class HabitatBridge(BaseBridge):
         if "semantic" in self.cfg.data_types:
             semantic_sensor_spec = habitat_sim.CameraSensorSpec()
             semantic_sensor_spec.uuid = "semantic_sensor"
+            self.cfg.data_sensor_dict["semantic"] = semantic_sensor_spec.uuid
             semantic_sensor_spec.sensor_type = habitat_sim.SensorType.SEMANTIC
             semantic_sensor_spec.resolution = [self.cfg.height, self.cfg.width]
+            semantic_sensor_spec.hfov = self.cfg.hfov
             semantic_sensor_spec.position = [0.0, self.cfg.sensor_height, 0.0]
             semantic_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
             sensor_specs.append(semantic_sensor_spec)
@@ -128,12 +129,12 @@ class HabitatBridge(BaseBridge):
         # Habitat cfg
         self.habitat_cfg = habitat_sim.Configuration(sim_cfg, [agent_cfg])
 
-        try:  # Needed to handle out of order cell run in Jupyter
-            self.sim.close()
-        except NameError:
-            pass
+        # try:  # Needed to handle out of order cell run in Jupyter
+        #     self.sim.close()
+        # except NameError:
+        #     pass
         self.sim = habitat_sim.Simulator(self.habitat_cfg)
-    
+
         # TODO: Add pathfinder: 
         # the navmesh can also be explicitly loaded
         # sim.pathfinder.load_nav_mesh(
@@ -141,6 +142,10 @@ class HabitatBridge(BaseBridge):
         # )
 
         self.agent = self.sim.initialize_agent(self.cfg.default_agent)
+        
+        # Get camera info from the simulator
+        if self.any_sensor:
+            self.camera_info = CameraData.from_fov_h(self.cfg.width, self.cfg.height, self.cfg.hfov)
 
         # Set agent state
         agent_state = habitat_sim.AgentState()
@@ -175,12 +180,22 @@ class HabitatBridge(BaseBridge):
         """
         data = {}
         if "pose" in self.cfg.data_types:
-            agent_state = self.agent.get_state()
+            if self.any_sensor:
+                if "rgb" in self.cfg.data_types:
+                    agent_state = self.agent.get_state().sensor_states[self.cfg.data_sensor_dict["rgb"]]
+                elif "depth" in self.cfg.data_types:
+                    agent_state = self.agent.get_state().sensor_states[self.cfg.data_sensor_dict["depth"]]
+                elif "semantic" in self.cfg.data_types:
+                    agent_state = self.agent.get_state().sensor_states[self.cfg.data_sensor_dict["semantic"]]
+            else:
+                agent_state = self.agent.get_state()
+                agent_state.position += np.array([0.0, 0.0, self.cfg.sensor_height])
+
+            print(agent_state)
             translation = np.array([agent_state.position[0], agent_state.position[1], agent_state.position[2]])
-            # NOTE: Habitat uses quaterion library with format (w, x, y, z). Scipy uses (x, y, z, w)
-            quat = np.array([agent_state.rotation[1], agent_state.rotation[2], agent_state.rotation[3], agent_state.rotation[0]])
+            # NOTE: Habitat uses quaterion library with format (w, x, y, z). Scipy rotation uses (x, y, z, w)
+            quat = np.array([agent_state.rotation.x, agent_state.rotation.y, agent_state.rotation.z, agent_state.rotation.w])
             rotation = Rotation.from_quat(quat)
-            data["pose"] = (translation, rotation)
 
         if self.any_sensor:
             observations = self.sim.get_sensor_observations(agent_ids=[self.cfg.default_agent])
@@ -190,24 +205,35 @@ class HabitatBridge(BaseBridge):
 
         return data
     
-    def get_pose(self):
+    def get_pose(self) -> Tuple[np.ndarray, Rotation]:
         """
             Get pose from the bridge
         """
-        agent_state = self.agent.get_state()
+        if self.any_sensor:
+            if "rgb" in self.cfg.data_types:
+                agent_state = self.agent.get_state().sensor_states[self.cfg.data_sensor_dict["rgb"]]
+            elif "depth" in self.cfg.data_types:
+                agent_state = self.agent.get_state().sensor_states[self.cfg.data_sensor_dict["depth"]]
+            elif "semantic" in self.cfg.data_types:
+                agent_state = self.agent.get_state().sensor_states[self.cfg.data_sensor_dict["semantic"]]
+        else:
+            agent_state = self.agent.get_state()
+            agent_state.position += np.array([0.0, 0.0, self.cfg.sensor_height])
+
+        print(agent_state)
         translation = np.array([agent_state.position[0], agent_state.position[1], agent_state.position[2]])
-        # NOTE: Habitat uses quaterion library with format (w, x, y, z). Scrotationipy uses (x, y, z, w)
-        quat = np.array([agent_state.rotation[1], agent_state.rotation[2], agent_state.rotation[3], agent_state.rotation[0]])
+        # NOTE: Habitat uses quaterion library with format (w, x, y, z). Scipy rotation uses (x, y, z, w)
+        quat = np.array([agent_state.rotation.x, agent_state.rotation.y, agent_state.rotation.z, agent_state.rotation.w])
         rotation = Rotation.from_quat(quat)
         return (translation, rotation)
     
-    def move(self, pose):
+    def move(self, traslation: np.ndarray, rotation: Rotation):
         """
             Move the agent to a new pose
         """
         agent_state = self.agent.get_state()
-        agent_state.position = pose[0]
-        quat = pose[1].as_quat()
+        agent_state.position = traslation
+        quat = rotation.as_quat()
         agent_state.rotation = np.array([quat[3], quat[0], quat[1], quat[2]])
         self.agent.set_state(agent_state)
 

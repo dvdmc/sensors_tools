@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from pathlib import Path
+import time
 from typing import Optional, Tuple
 from matplotlib import pyplot as plt
 
@@ -22,7 +23,10 @@ class SemanticInferenceConfig:
     model_name: str = "deeplabv3_resnet50"
     """ Name of the model to be used """
 
-    num_classes: int = 7
+    inference_type: str = "deterministic"
+    """ Type of inference to be performed """
+
+    num_classes: int = 21
     """ Number of classes for the semantic inference """
 
     labels_name: str = "coco_voc"
@@ -50,15 +54,8 @@ class SemanticInference:
         self.color_map = get_color_map(self.cfg.labels_name, bgr=False)
 
         # Setup the semantic inference model
-        custom_weights: bool = self.cfg.weights_path is not None
-        self.model = get_model("deterministic", self.cfg, pretrained = not custom_weights)
-
-        # Load the pretrained model
-        if custom_weights:
-            weights = torch.load(str(self.cfg.weights_path), map_location=self.gpu_device)
-            self.model.load_state_dict(weights['model_state_dict'], strict=True)
-
-        
+        custom_weights: bool = self.cfg.weights_path is not None # TODO: Handle this correctly
+        self.model = get_model(self.cfg.inference_type, self.cfg, pretrained = True)
 
         self.model.to(self.gpu_device)
         self.model.eval()
@@ -113,21 +110,23 @@ class SemanticInference:
         """
         prev_width = img.shape[1]
         prev_height = img.shape[0]
+        recover_size = transforms.Resize((self.cfg.height, self.cfg.width), interpolation=Image.NEAREST)
         img_t: torch.Tensor = self.transform_img(img)
         img_t = img_t.unsqueeze(0)
         img_t = img_t.to(self.gpu_device)
         with torch.no_grad():
-            output_logs = self.model(img_t)['out']
+            output_logs = self.model(img_t) # TODO: We have to change this to handle generic outputs instead of deeplabv3 outputs
             probs = self.softmax(output_logs)
 
-        probs = probs[0] # Remove batch dimension
+        probs = recover_size(probs[0]) # Remove batch dimension
+        probs_np = probs.permute(1, 2, 0).cpu().numpy() # HxWxC
+
+        # Get label prediction for visualization
         pred = torch.argmax(probs, dim=0).cpu().numpy()
-        probs_np = probs.cpu().numpy().transpose(1, 2, 0) # HxWxC for resizing
         img_out = self.overlay_label_rgb(pred, img)
         # Resize to original size
-        probs_np = cv2.resize(probs_np, (prev_width, prev_height), interpolation = cv2.INTER_NEAREST)
-        img_out = cv2.resize(img_out, (prev_width, prev_height), interpolation = cv2.INTER_NEAREST)
 
+        
         out = {'probs': probs_np, 'img_out': img_out}
 
         return out

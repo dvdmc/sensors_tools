@@ -1,5 +1,9 @@
 from dataclasses import dataclass, field
+import time
 from typing import Literal, Optional, Union
+
+import numpy as np
+from scipy.spatial.transform import Rotation
 
 from sensors_tools.bridges import BridgeConfig, BridgeType, get_bridge
 
@@ -55,3 +59,6 @@ class SemanticInferenceSensor:
                 data["epistemic_var"] = out["epistemic_var"]
                 data["acc_probs"] = out["acc_probs"]
         return data
+    
+    def move(self, translation: np.ndarray, rotation: Rotation):
+        self.bridge.move(translation, rotation)

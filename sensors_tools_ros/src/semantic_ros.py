@@ -9,6 +9,7 @@ from PIL import Image
 import rospy
 from sensor_msgs.msg import Image as ImageMsg
 from std_srvs.srv import SetBoolResponse, SetBool
+import cv2
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import PointCloud2, PointField
 from geometry_msgs.msg import TransformStamped
@@ -22,6 +23,8 @@ from sensors_tools.sensor import SemanticInferenceSensor, SensorConfig
 from sensors_tools.bridges import ControllableBridges, get_bridge, get_bridge_config
 from sensors_tools.inference import get_inference, get_inference_config
 from sensors_tools.utils.semantics_utils import label2rgb
+
+from sensors_tools_ros.srv import MoveSensorRequest, MoveSensorResponse
 
 class SemanticNode:
     def __init__(self):
@@ -266,7 +269,7 @@ class SemanticNode:
             Args:
                 points_pcd: a numpy array with shape (H*W, 3)
                 points_RGB: a numpy array with shape (H*W, 4)
-                semantic: a numpy array with shape (H, W, C) with C the number of classes
+                semantic: a numpy array with shape (H, W, C) with C the number of classes (In the case of MC: S, H, W, C)
                 semantic_gt: a numpy array with shape (H, W) with the ground truth class
                 time_stamp: a rospy.Time object
         """
@@ -285,7 +288,6 @@ class SemanticNode:
             self.n_forward_passes = 1
         elif self.cfg.inference_type == "mcd":
             self.n_forward_passes = self.sensor.cfg.inference_cfg.num_mc_samples #type: ignore
-            print(f"Number of forward passes: {self.n_forward_passes}")
         # The PointField is defined with a name, the starting byte offset, the data type and number of elements.
         # rgb is encoded in the standard way so RViz can visualize it. It will be transformed to float32 with view
         # gt_class includes a single value with the ground truth class. It is of type float because it is easier to modify in the dstack
@@ -313,10 +315,8 @@ class SemanticNode:
         # Turn numpy matrix points_RGB of 128 128 4 of type uint8 into a numpy array of size 128 128 1 of type float32
         colors_converted = points_RGB.view(np.float32)
         gt_class_converted = semantic_gt.astype(np.float32)
-
         points_data = np.dstack((points_pcd, colors_converted, gt_class_converted[::self.stride, ::self.stride], accumulated_pred_out_reshaped[::self.stride, ::self.stride, :]))
         point_cloud_msg.data += points_data.tobytes()
-
         return point_cloud_msg
 
     def loop(self, event):
@@ -384,12 +384,15 @@ class SemanticNode:
                 # print("Send point cloud with: ", pcd_msg.width, " points")
         pass
 
-    def move_srv(self, req: SetBool) -> SetBoolResponse:
+    def move_srv(self, req: MoveSensorRequest) -> MoveSensorResponse:
         """
             Move the camera
         """
-        self.sensor.bridge.move()
-        return SetBoolResponse(success=True, message="Moved")
+        translation = req.pose.translation
+        quat = req.pose.rotation
+        rotation = Rotation.from_quat([quat.x, quat.y, quat.z, quat.w])
+        self.sensor.bridge.move(translation, rotation)
+        return MoveSensorResponse(success=True)
 
     def loop_srv(self, req: SetBool) -> SetBoolResponse:
         """
