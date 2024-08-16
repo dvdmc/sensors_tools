@@ -23,7 +23,7 @@ ScanNetSensorDataTypes = Literal["rgb", "depth", "semantic", "pose"]
 """
 
 @dataclass
-class ScanNetBridgeConfig(BaseBridgeConfig):
+class ScanNetVOCBridgeConfig(BaseBridgeConfig):
     """
         Configuration class for ScanNet
     """
@@ -33,18 +33,16 @@ class ScanNetBridgeConfig(BaseBridgeConfig):
     dataset_path: Path = Path("/media/david/dataset/ScanNet")
     """ Path to the dataset """
 
-    tsv_path: Path = Path("/media/david/dataset/ScanNet/scannetv2-labels.combined.tsv")
-    """ Path to the tsv file """
-
-    downsampling_factor_dataset: int = 20
+    downsampling_factor_dataset: int = 2
     """ Downsampling factor for the dataset. Or how many images are there in between images. """
 
 
-class ScanNetBridge(BaseBridge):
+class ScanNetVOCBridge(BaseBridge):
     """
-        Bridge for Airsim
+        Bridge for Scannet-like data but for the coco_voc dataset
+        Usually extracted from Airsim
     """
-    def __init__(self, cfg: ScanNetBridgeConfig):
+    def __init__(self, cfg: ScanNetVOCBridgeConfig):
         """
             Constructor
         """
@@ -103,7 +101,7 @@ class ScanNetBridge(BaseBridge):
                 self.cy_depth = float(line.split(" ")[2])
             elif "numColorFrames" in line:
                 self.total_steps = int(line.split(" ")[2])
-                
+
         # We adjust to the depth image size
         ratio_width = self.width_depth/self.width_color
         ratio_height = self.height_depth/self.height_color
@@ -118,15 +116,7 @@ class ScanNetBridge(BaseBridge):
         print("CAMERA INFO: ", self.camera_info)
         self.camera_info_depth = CameraData(cx=self.cx_depth, cy=self.cy_depth, fx=self.fx_depth, fy=self.fy_depth, width=self.width_depth, height=self.height_depth)
         #######################################################
-        label_mapping = pd.read_csv(self.cfg.tsv_path, sep='\t')
-        NYU_classes = label_mapping['nyu40id'].values
-        id_classes = label_mapping['id'].values
-        self.remap_to_NYU_classes = {id_classes[i]: NYU_classes[i].astype(int) for i in range(len(NYU_classes))}
-        self.remapping_40_to_13_classes = {0: 0, 1:12, 2:5, 3:6, 4:1, 5:4, 6:9, 7:10, 8:12, 9:13, 10:6, 11:8, 12:6, 
-                                    13:13, 14:10, 15:6, 16:13, 17:6, 18:7, 19:7, 20:5, 21:7, 22:3, 23:2, 24:6,
-                                    25:11, 26:7, 27:7, 28:7, 29:7, 30:7, 31:7, 32:6, 33:7, 34:7, 35:7, 36:7,
-                                    37:7, 38:7, 39:6, 40:7}
-        
+    
         # Init pose
         pose_path = self.cfg.dataset_path / "pose" / f"{self.seq_n}.txt"
         translation_matrix = np.loadtxt(pose_path)
@@ -136,19 +126,6 @@ class ScanNetBridge(BaseBridge):
 
         self.ready = True
 
-    def remap_NYU_classes(self, label_40):
-        label_13 = np.zeros_like(label_40)
-        for key, value in self.remapping_40_to_13_classes.items():
-            label_13[np.where(label_40 == key)] = value
-        return label_13
-
-    def remap_ScanNet_to_13_classes(self, ScanNet_label):
-        label_40 = np.zeros_like(ScanNet_label)
-        for key, value in self.remap_to_NYU_classes.items():
-            label_40[np.where(ScanNet_label == key)] = value
-        label_13 = self.remap_NYU_classes(label_40)
-        return label_13
-    
     def open_images(self):
         """
         Open the images from the dataset folder
@@ -169,7 +146,6 @@ class ScanNetBridge(BaseBridge):
             # Load GT label
             label_path = self.cfg.dataset_path / "label" / f"{self.seq_n}.png"
             label = np.array(Image.open(label_path))
-            label = self.remap_ScanNet_to_13_classes(label)
             label[np.where(label == 255)] = 0 #Remove the white contour
             label = cv2.resize(label, (self.camera_info_depth.width, self.camera_info_depth.height), interpolation = cv2.INTER_NEAREST)
             # label = label[:, 80:560]
@@ -198,7 +174,7 @@ class ScanNetBridge(BaseBridge):
             rotation = Rotation.from_matrix(translation_matrix[:3, :3])
             data["pose"] = (translation, rotation)
             self.pose = (translation, rotation)
-
+            
         img_data = self.open_images()
 
         data.update(img_data)

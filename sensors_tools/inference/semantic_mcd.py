@@ -7,7 +7,6 @@ from matplotlib import pyplot as plt
 import numpy as np
 import torch
 from PIL import Image
-import cv2
 
 from torchvision import transforms
 

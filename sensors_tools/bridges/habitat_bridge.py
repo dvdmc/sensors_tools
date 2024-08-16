@@ -7,10 +7,10 @@ from PIL import Image
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-import habitat_sim
-from habitat_sim.utils import common as utils
-from habitat_sim.utils import viz_utils as vut
-import magnum as mn
+import habitat_sim #type: ignore
+from habitat_sim.utils import common as utils #type: ignore
+from habitat_sim.utils import viz_utils as vut #type: ignore
+import magnum as mn #type: ignore
 
 from sensors_tools.base.cameras import CameraData
 from sensors_tools.bridges.base_bridge import BaseBridge, BaseBridgeConfig
@@ -174,7 +174,7 @@ class HabitatBridge(BaseBridge):
 
         return img_data
     
-    def get_data(self):
+    def get_data(self) -> dict:       
         """
             Get data from the bridge
         """
@@ -227,14 +227,15 @@ class HabitatBridge(BaseBridge):
         rotation = Rotation.from_quat(quat)
         return (translation, rotation)
     
-    def move(self, traslation: np.ndarray, rotation: Rotation):
+    def move_to_pose(self, traslation: np.ndarray, rotation: Rotation):
         """
             Move the agent to a new pose
         """
         agent_state = self.agent.get_state()
         agent_state.position = traslation
-        quat = rotation.as_quat()
+        quat = rotation.as_quat(canonical=False)
         agent_state.rotation = np.array([quat[3], quat[0], quat[1], quat[2]])
         self.agent.set_state(agent_state)
 
         time.sleep(0.1)
+        return True

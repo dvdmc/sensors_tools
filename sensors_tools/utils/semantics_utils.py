@@ -1,7 +1,7 @@
 import numpy as np
 
 # A function that obtains the different colors of an image
-def get_class_colors(rgb_image, prev_class_colors=[]):
+def compute_class_colors(rgb_image, prev_class_colors=[]):
     """A function that obtains the different colors of an image as integers
     Returns:
         class_colors: a list of colors
@@ -35,6 +35,54 @@ def get_color_map(dataset_name: str, bgr: bool = True) -> np.ndarray:
     else:
         raise ValueError(f"Dataset {dataset_name} not supported")
     return color_map
+
+def get_label_mapper(mapper_name: str) -> dict:
+    """
+        Get the label mapper for the dataset
+        Args:
+            mapper_name: name of the mapper
+        Returns:
+            label_mapper: label mapper for the dataset
+    """
+    if mapper_name == "coco_voc_2_pascal_8":
+        label_mapper = get_coco_voc_2_pascal_8_label_mapper()
+    else:
+        raise ValueError(f"Mapper {mapper_name} not supported")
+    return label_mapper
+
+def get_coco_voc_2_pascal_8_label_mapper() -> dict:
+    """
+        Get the label mapper for the dataset
+        Args:
+            mapper_name: name of the mapper
+        Returns:
+            label_mapper: label mapper for the dataset
+    """
+    label_mapper = {
+        0: 0,
+        5: 1,
+        9: 2,
+        11: 3,
+        15: 4,
+        16: 5,
+        18: 6,
+        20: 7
+    }
+    return label_mapper
+
+def apply_label_map(label_image: np.ndarray, label_map: dict) -> np.ndarray:
+    """
+        Apply the label map to the labels
+        Args:
+            label_map: label mapper
+            labels: labels to be mapped
+        Returns:
+            mapped_labels: mapped labels
+    """
+    mapped_labels = np.zeros_like(label_image)
+    for key, value in label_map.items():
+        mapped_labels[label_image == key] = value
+    return mapped_labels
 
 def get_pascal_labels(bgr=False):
     """Load the mapping that associates pascal classes with label colors
@@ -92,6 +140,18 @@ def get_pascal_labels_names():
         "sheep",
         "sofa",
         "train",
+        "tv/monitor",
+    ]
+
+def get_pascal_8_labels_names():
+    return [
+        "background",
+        "bottle",
+        "chair",
+        "diningtable",
+        "person",
+        "potted plant",
+        "sofa",
         "tv/monitor",
     ]
 

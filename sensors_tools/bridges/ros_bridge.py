@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List, Literal
+from typing import List, Literal, Tuple
 
 import cv2
 
@@ -72,7 +72,7 @@ class ROSBridge(BaseBridge):
         # Members
         self.rgb = None
         self.depth = None
-        self.pose = None
+        self.pose
         self.semantic_gt = None
         self.has_camera_info = False
         self.has_depth_camera_info = False
@@ -112,8 +112,6 @@ class ROSBridge(BaseBridge):
             while not self.has_depth_camera_info:
                 rospy.loginfo("Waiting for depth camera_info topic to be published")
                 rospy.sleep(1)
-
-        self.ready = True
 
     def camera_info_callback(self, data: CameraInfo):
         """
@@ -163,23 +161,24 @@ class ROSBridge(BaseBridge):
         if "pose" in self.cfg.data_types:
             # Update pose using the tf listener
             geometry_msg_pose = self.tf_buffer.lookup_transform(self.cfg.origin_tf, self.cfg.poses_tf, rospy.Time(0), timeout=rospy.Duration(1))
-            self.pose = (
-                np.array(
+            self.pose = (np.array(
                     [
                         geometry_msg_pose.transform.translation.x,
                         geometry_msg_pose.transform.translation.y,
                         geometry_msg_pose.transform.translation.z,
                     ]
-                ),
-                Rotation.from_quat(
+            ),
+            Rotation.from_quat(
                     [
                         geometry_msg_pose.transform.rotation.x,
                         geometry_msg_pose.transform.rotation.y,
                         geometry_msg_pose.transform.rotation.z,
                         geometry_msg_pose.transform.rotation.w,
                     ]
-                ),
-            )
+            ))
+        
+        self.ready = True # Not ready until pose has not being read
+
 
     def depth_callback(self, data: RosImage):
         """
@@ -187,7 +186,7 @@ class ROSBridge(BaseBridge):
         """
         self.depth = self.bridge.imgmsg_to_cv2(data, "passthrough") / 1000.0 # Convert to meters
 
-    def get_data(self):
+    def get_data(self) -> dict:
         """
         Get data from the bridge
         """
@@ -209,10 +208,7 @@ class ROSBridge(BaseBridge):
             data["depth"] = cv2.resize(data["depth"], (self.width, self.height))
 
         if "pose" in self.cfg.data_types:
-            if self.pose is not None:
-                data["pose"] = self.pose
-            else:
-                print("Pose data not available")
+            data["pose"] = self.pose
 
         if "semantic" in self.cfg.data_types:
             if self.semantic_gt is not None:
@@ -221,13 +217,13 @@ class ROSBridge(BaseBridge):
                 # Fill in fake data
                 data["semantic_gt"] = np.zeros((self.height, self.width))
 
-        # If any of the data is not available, return None
-        if any([v is None for v in data.values()]):
-            return None
+        # # If any of the data is not available, return None
+        # if any([v is None for v in data.values()]):
+        #     return None
         
         return data
 
-    def get_pose(self):
+    def get_pose(self) -> Tuple[np.ndarray, Rotation]:
         """
         Get the pose from the bridge
         """

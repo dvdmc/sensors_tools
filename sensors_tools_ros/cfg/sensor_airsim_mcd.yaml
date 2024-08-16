@@ -1,5 +1,13 @@
 frequency: 10.0 # Frequency of the sensor in Hz. -1 means that we are using a service instead of a timer
 stride: 8 # Stride of the sensor for generating the pointcloud
+max_depth: 8.0 # Maximum distance of the sensor
+publish_freespace_point_cloud: true
+origin_frame_id: "map" # Origin of the sensor will be published in this frame for the poses
+sensor_frame_id: "camera_link" # Sensor messages will be published in this frame
+
+save_inference: false
+save_inference_path: '/media/david/datasets/dataset/'
+
 # Config for bridge is in sensors_tools/bridge/{bridge_type}.py
 bridge:
   bridge_type: 'airsim' # Source of the sensor. It can be 'airsim' or 'ros'
@@ -15,4 +23,4 @@ inference:
   weights_path: "/home/david/research/APbayDL/preliminaryBayesian/models/VOC12_7_classes_Resnet50_Drop03_AllBlocks_epoch_60"
   num_classes: 8
   labels_name: "pascal_8"
-  mcd_samples: 10 # Number of samples for the MCD inference
+  mcd_samples: 32 # Number of samples for the MCD inference

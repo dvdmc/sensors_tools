@@ -41,11 +41,18 @@ class BaseBridge(ABC):
         """
         pass
 
-    def move(self, traslation: np.ndarray, rotation: Rotation):
+    def move(self) -> bool:
+        """
+            Apply movement to the bridge asuming 
+            it will control the movement (dataset case)
+        """
+        raise NotImplementedError("Move not implemented for this bridge")
+    
+    def move_to_pose(self, traslation: np.ndarray, rotation: Rotation) -> bool:
         """
             Apply a movement to the bridge
             This function should be used when the bridge
             controls the movement of the sensor as in
             sequence datasets
         """
-        print("Move not implemented for this bridge")
+        raise NotImplementedError("Move to pose not implemented for this bridge")

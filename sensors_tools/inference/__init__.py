@@ -64,6 +64,7 @@ def get_model(inference_type: InferenceType, inference_cfg: InferenceConfig, pre
                 if inference_cfg.weights_path is not None:
                     from .models.deeplabv3.deeplab_classifier import deeplabv3_resnet50_MCD
                     weights = torch.load(str(inference_cfg.weights_path), weights_only=True)
+                    print("Using loaded weights")
                     model = deeplabv3_resnet50_MCD(num_classes=inference_cfg.num_classes) # We assume this at the moment for the active semantic paper
                     model.load_state_dict(weights, strict=True)
                 else:

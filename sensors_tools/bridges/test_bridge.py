@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 import json
 import os
 from pathlib import Path
-from typing import List, Literal
+from typing import List, Literal, Tuple
 
 from PIL import Image
 import numpy as np
@@ -78,6 +78,7 @@ class TestBridge(BaseBridge):
         self.camera_info = CameraData(cx=camera_data["cx"], cy=camera_data["cy"], fx=camera_data["fx"], fy=camera_data["fy"], width=self.cfg.width, height=self.cfg.height)
         #######################################################
     
+        self.ready = True
 
     def open_images(self):
         """
@@ -109,7 +110,7 @@ class TestBridge(BaseBridge):
         return data
 
     
-    def get_data(self):
+    def get_data(self) -> dict:
         """
             Get data from the bridge
         """
@@ -120,7 +121,7 @@ class TestBridge(BaseBridge):
             translation = pose_matrix[:3, 3]
             rotation = Rotation.from_matrix(pose_matrix[:3, :3])
             data["pose"] = (translation, rotation)
-
+            self.pose = (translation, rotation)
         img_data = self.open_images()
 
         data.update(img_data)
@@ -129,6 +130,13 @@ class TestBridge(BaseBridge):
         self.increment_seq()
 
         return data
+    
+
+    def get_pose(self) -> Tuple[np.ndarray, Rotation]:
+        """
+            Get pose from the bridge
+        """
+        return self.pose
     
     def move(self):
         """

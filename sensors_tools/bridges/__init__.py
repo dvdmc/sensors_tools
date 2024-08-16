@@ -14,18 +14,19 @@ if TYPE_CHECKING:
     from .airsim_bridge import AirsimBridge, AirsimBridgeConfig
     from .ros_bridge import ROSBridge, ROSBridgeConfig
     from .scannet_bridge import ScanNetBridge, ScanNetBridgeConfig
+    from .scannet_voc_bridge import ScanNetVOCBridge, ScanNetVOCBridgeConfig
     from .test_bridge import TestBridge, TestBridgeConfig
     from .habitat_bridge import HabitatBridge, HabitatBridgeConfig
 
 BridgeConfig = Union[
-    "ScanNetBridgeConfig", "TestBridgeConfig", "AirsimBridgeConfig", "ROSBridgeConfig", "HabitatBridgeConfig"
+    "ScanNetBridgeConfig", "ScanNetVOCBridgeConfig", "TestBridgeConfig", "AirsimBridgeConfig", "ROSBridgeConfig", "HabitatBridgeConfig"
 ]
 
-BridgeType = Literal["airsim", "ros", "scannet", "test", "habitat"]
+BridgeType = Literal["airsim", "ros", "scannet", "scannet_voc", "test", "habitat"]
 
-ControllableBridges = ["scannet", "test", "habitat"]  # Bridges that can be controlled by the sensor
+ControllableBridges = ["scannet", "scannet_voc", "test", "habitat"]  # Bridges that can be controlled by the sensor
 
-Bridges = Union["ScanNetBridge", "TestBridge", "AirsimBridge", "ROSBridge", "HabitatBridge"]
+Bridges = Union["ScanNetBridge", "ScanNetVOCBridge", "TestBridge", "AirsimBridge", "ROSBridge", "HabitatBridge"]
 
 
 def get_bridge_config(bridge_type: BridgeType):
@@ -39,6 +40,10 @@ def get_bridge_config(bridge_type: BridgeType):
         from .scannet_bridge import ScanNetBridgeConfig
 
         return ScanNetBridgeConfig
+    elif bridge_type == "scannet_voc":
+        from .scannet_voc_bridge import ScanNetVOCBridgeConfig
+
+        return ScanNetVOCBridgeConfig
     elif bridge_type == "ros":
         from .ros_bridge import ROSBridgeConfig
 
@@ -71,6 +76,11 @@ def get_bridge(bridge_type: BridgeType, bridge_cfg: BridgeConfig) -> Bridges:
 
         assert isinstance(bridge_cfg, ScanNetBridgeConfig), "Bridge cfg must be of type ScanNetBridgeConfig"
         return ScanNetBridge(bridge_cfg)
+    elif bridge_type == "scannet_voc":
+        from .scannet_voc_bridge import ScanNetVOCBridge, ScanNetVOCBridgeConfig
+
+        assert isinstance(bridge_cfg, ScanNetVOCBridgeConfig), "Bridge cfg must be of type ScanNetVOCBridgeConfig"
+        return ScanNetVOCBridge(bridge_cfg)
     elif bridge_type == "ros":
         from .ros_bridge import ROSBridge, ROSBridgeConfig
 

@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 import time
-from typing import List, Literal
+from typing import List, Literal, Tuple
 from threading import Lock
 
 from PIL import Image
@@ -9,8 +9,8 @@ from scipy.spatial.transform import Rotation
 
 import airsim #type: ignore
 
-from airsim_tools.depth_conversion import depth_conversion
-from airsim_tools.semantics import airsim2class_id
+from airsim_tools.depth_conversion import depth_conversion # type: ignore
+from airsim_tools.semantics import get_airsim_labels, rgb2label # type: ignore
 
 from sensors_tools.base.cameras import CameraData
 from sensors_tools.bridges.base_bridge import BaseBridge, BaseBridgeConfig
@@ -149,12 +149,12 @@ class AirsimBridge(BaseBridge):
                 img_rgb_airsim = img_buffer.reshape(response.height, response.width, 3)
                 np_rgb_airsim = img_rgb_airsim[:,:,::-1]
                 # Get the semantic image
-                semantic = airsim2class_id(np_rgb_airsim)
+                semantic = rgb2label(np_rgb_airsim, get_airsim_labels())
                 img_data["semantic_gt"] = np.array(semantic)
 
         return img_data
     
-    def get_data(self):
+    def get_data(self) -> dict:
         """
             Get data from the bridge
         """
@@ -176,7 +176,7 @@ class AirsimBridge(BaseBridge):
 
         return data
     
-    def get_pose(self):
+    def get_pose(self) -> Tuple[np.ndarray, Rotation]:
         """
             Get pose from the bridge
         """
