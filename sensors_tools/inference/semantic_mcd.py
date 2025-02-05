@@ -38,20 +38,14 @@ class SemanticMCDInference(SemanticInference):
 
         # Setup the semantic inference model
         custom_weights: bool = self.cfg.weights_path is not None
-        self.model = get_model(self.cfg.inference_type, self.cfg, pretrained = True)
-
-        self.model.to(self.gpu_device)
+        self.model, self.preprocess = get_model(self.cfg, self.gpu_device, pretrained = True)
         self.model.eval()
         # We set the dropout layers active during inference!
         for m in self.model.modules():
             if m.__class__.__name__.startswith('Dropout'):
                 print('We found a dropout layer', m)
                 m.train()
-    
-        self.transform_img = transforms.Compose([transforms.ToTensor(),
-                                            transforms.Resize((self.cfg.height, self.cfg.width), antialias=True), # type: ignore
-                                            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),])
-
+        
         self.softmax = torch.nn.Softmax(dim=1).to(self.gpu_device) # Assumes it is applied to batch
         
     def get_prediction(self, img: np.ndarray) -> dict:
@@ -64,9 +58,9 @@ class SemanticMCDInference(SemanticInference):
         """
         prev_width = img.shape[1]
         prev_height = img.shape[0]
-        recover_size = transforms.Resize((prev_height, prev_width), interpolation=Image.NEAREST)
+        recover_size = transforms.Resize((prev_height, prev_width), interpolation=transforms.InterpolationMode.NEAREST)
 
-        img_t: torch.Tensor = self.transform_img(img)
+        img_t: torch.Tensor = self.preprocess(img) # type: ignore 
         img_t = img_t.unsqueeze(0)
         img_t = img_t.to(self.gpu_device)
         accumulated_probs = torch.zeros((self.cfg.num_mc_samples, self.cfg.num_classes, img_t.shape[2], img_t.shape[3])).to(self.gpu_device)

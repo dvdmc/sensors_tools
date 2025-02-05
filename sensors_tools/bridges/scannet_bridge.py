@@ -211,7 +211,7 @@ class ScanNetBridge(BaseBridge):
         """
         return self.pose
     
-    def move(self):
+    def move(self) -> bool:
         """
             Apply increment seq as moving the sensor
         """

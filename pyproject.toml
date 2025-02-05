@@ -9,10 +9,28 @@ readme="README.md"
 requires-python=">=3.7.0"
 version = "0.1.0"
 dependencies=[
+    "tqdm",
     "numpy",
     "matplotlib",
     "Pillow",
+    "torchtyping",
     "pyyaml",
+    "einops",
+    "ftfy",
+    "gdown",
+    "regex",
+    # Trident dependencies (check versions)
+    "fsspec==2023.9.0",
+    "huggingface_hub==0.23.0",
+    "nltk==3.8.1",
+    "opencv_python==4.6.0.66",
+    "openpyxl==3.1.2",
+    "pycocotools==2.0.7",
+    "safetensors==0.4.3",
+    "scipy==1.14.0",
+    "scikit-image",
+    "timm==0.4.12",
+    "transformers==4.37.2",
 ]
 # TODO: Add optional dependency rospkg
 # Indicate in readme: pip3 install torch torchvision torchaudio

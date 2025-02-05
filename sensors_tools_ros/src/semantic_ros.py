@@ -20,8 +20,8 @@ from scipy.spatial.transform import Rotation
 from poses_tools.frame_converter import FrameConverter  # type: ignore
 
 from sensors_tools.sensor import SemanticInferenceSensor, SensorConfig
-from sensors_tools.bridges import ControllableBridges, get_bridge, get_bridge_config
-from sensors_tools.inference import get_inference, get_inference_config
+from sensors_tools.bridges import ControllableBridges, BridgeType, get_bridge_config
+from sensors_tools.inference import InferenceType, Inference, InferenceConfig, get_inference_config
 from sensors_tools.utils.semantics_utils import label2rgb
 
 from sensors_tools_ros.srv import MoveSensorRequest, MoveSensorResponse, MoveSensor
@@ -72,15 +72,18 @@ class SemanticNode:
                     f"/{self.camera_name}/freespace_point_cloud", PointCloud2, queue_size=10
                 )
         if "semantic" in self.sensor.cfg.bridge_cfg.data_types:
+            assert self.cfg.inference_cfg is not None, "Inference cfg must be specified if semantic data is requested"
             self.pub_semantic_gt = rospy.Publisher(
                 f"/{self.camera_name}/semantic_gt/image_raw", ImageMsg, queue_size=10
             )
             self.pub_semantic = rospy.Publisher(f"/{self.camera_name}/semantic/image_raw", ImageMsg, queue_size=10)
-
-        if "semantic" in self.sensor.cfg.bridge_cfg.data_types and self.sensor.cfg.inference_type in ["mcd"]:
-            self.pub_uncertainty = rospy.Publisher(
-                f"/{self.camera_name}/uncertainty/image_raw", ImageMsg, queue_size=10
-            )
+            # We will leave the n_forward_passes for now. Before it was used to send al the MC samples
+            self.n_forward_passes = 1
+            if "mcd" in self.cfg.inference_cfg.model_name:
+                self.pub_uncertainty = rospy.Publisher(
+                    f"/{self.camera_name}/uncertainty/image_raw", ImageMsg, queue_size=10
+                )
+                self.n_forward_passes = self.sensor.cfg.inference_cfg.num_mc_samples  # type: ignore
 
         if self.frequency == -1:
             self.srv_capture_data = rospy.Service(f"/{self.camera_name}/capture_data", SetBool, self.loop_srv)
@@ -98,21 +101,21 @@ class SemanticNode:
         Load config from rosparams
         """
         print("Loading ROSPARAMS")
-        bridge_type = rospy.get_param("~bridge/bridge_type")
+        bridge_type: BridgeType = rospy.get_param("~bridge/bridge_type")  # type: ignore
         print(f"Bridge type: {bridge_type}")
-        bridge_config_class = get_bridge_config(bridge_type)  # type: ignore TODO: Solve
+        bridge_config_class = get_bridge_config(bridge_type)
         bridge_parameters = self.load_rosparams(bridge_config_class, "bridge")
         bridge_cfg = bridge_config_class(**bridge_parameters)
 
-        inference_type = rospy.get_param("~inference/inference_type", "deterministic")
-        print(f"Inference type: {inference_type}")
-        inference_config_class = get_inference_config(inference_type)  # type: ignore TODO: Solve
+        model_name: str = rospy.get_param("~inference/model_name", "deeplabv3_resnet50_deterministic")  # type: ignore
+        print(f"Model name: {model_name}. Inference type: {model_name.split('_')[-1]}")
+        inference_config_class = get_inference_config(model_name)
         inference_parameters = self.load_rosparams(inference_config_class, "inference")
         inference_cfg = inference_config_class(**inference_parameters)
 
         gt_label_mapper = rospy.get_param("~gt_labels_mapper", None)
 
-        save_inference = rospy.get_param("~save_inference", False)
+        save_inference: bool = rospy.get_param("~save_inference", False)  # type: ignore
         if save_inference:
             save_inference_path = Path(rospy.get_param("~save_inference_path", ""))  # type: ignore
         else:
@@ -120,7 +123,6 @@ class SemanticNode:
 
         self.cfg = SensorConfig(bridge_type=bridge_type, 
                                 bridge_cfg=bridge_cfg, 
-                                inference_type=inference_type, 
                                 inference_cfg=inference_cfg, 
                                 save_inference=save_inference, 
                                 save_inference_path=save_inference_path,
@@ -228,7 +230,11 @@ class SemanticNode:
             pcd: a point cloud as a numpy array with shape (H*W, 4)
         """
         rgb_np = rgb.astype(np.float32) / 255
-        depth_np = depth
+        depth_np = depth.astype(np.uint8)
+        max_dist = np.max(depth_np)
+        depth_mask = depth_np < 1.2
+        depth_np[depth_mask] = 0
+        depth_np = cv2.medianBlur(depth_np, 15)  # Filter the depth
         W = depth_np.shape[1]
         H = depth_np.shape[0]
         columns, rows = np.meshgrid(np.linspace(0, W - 1, num=int(W / self.stride)), np.linspace(0, H - 1, num=int(H / self.stride)))  # type: ignore
@@ -315,16 +321,11 @@ class SemanticNode:
         point_cloud_msg.header.stamp = time_stamp
         point_cloud_msg.header.frame_id = self.sensor_frame_id
         point_cloud_msg.height = 1
-
+        
         point_cloud_msg.width = points_pcd.shape[0] * points_pcd.shape[1]
 
         sent_n_classes = self.cfg.inference_cfg.num_classes  # type: ignore
 
-        # We will leave the n_forward_passes for now. Before it was used to send al the MC samples
-        if self.cfg.inference_type == "deterministic":
-            self.n_forward_passes = 1
-        elif self.cfg.inference_type == "mcd":
-            self.n_forward_passes = self.sensor.cfg.inference_cfg.num_mc_samples  # type: ignore
         # The PointField is defined with a name, the starting byte offset, the data type and number of elements.
         # rgb is encoded in the standard way so RViz can visualize it. It will be transformed to float32 with view
         # gt_class includes a single value with the ground truth class. It is of type float because it is easier to modify in the dstack
@@ -342,12 +343,13 @@ class SemanticNode:
         point_cloud_msg.is_dense = True
         # Turn accumulated_pred into a numpy array with correct order 512 512 n_forward_passes n_classes
         # ADD ONE DIMENSION TO ACCUMULATED PRED TO BE CONSISTENT WITH FORWARDS PASES
-        if self.cfg.inference_type == "deterministic":
+        assert self.cfg.inference_cfg is not None, "Inference not configured!"
+        if "deterministic" in self.cfg.inference_cfg.model_name or "open" in self.cfg.inference_cfg.model_name:
             accumulated_pred_out = np.expand_dims(semantic, axis=0)
-        elif self.cfg.inference_type == "mcd":
+        elif "mcd" in self.cfg.inference_cfg.model_name:
             accumulated_pred_out = semantic
         else:
-            raise ValueError("Inference type not supported")
+            raise ValueError(f"Inference type {self.cfg.inference_cfg.model_name} not supported")
         accumulated_pred_out = np.transpose(accumulated_pred_out, (1, 2, 0, 3))
         accumulated_pred_out_reshaped = accumulated_pred_out.reshape(
             (self.camera_info.height, self.camera_info.width, self.n_forward_passes * sent_n_classes), order="C"
@@ -421,12 +423,13 @@ class SemanticNode:
 
             if "semantic" in self.sensor.cfg.bridge_cfg.data_types:
                 # TODO: In the future, we can generate a pointcloud message with uncertainty / uncertainty per-class
-                if self.sensor.cfg.inference_type == "deterministic":
+                assert self.sensor.cfg.inference_cfg is not None, "Inference not configured!"
+                if "deterministic" in self.sensor.cfg.inference_cfg.model_name or "open" in self.sensor.cfg.inference_cfg.model_name:
                     pred_data = data["semantic"]
-                elif self.sensor.cfg.inference_type == "mcd":
+                elif "mcd" in self.sensor.cfg.inference_cfg.model_name:
                     pred_data = data["acc_probs"]
                 else:
-                    raise ValueError("Inference type not supported")
+                    raise ValueError(f"Inference type {self.cfg.inference_cfg.model_name} not supported")
                 pcd_msg = self.generate_point_cloud_msg(
                     points_pcd, points_RGB, pred_data, data["semantic_gt"], timestamp
                 )

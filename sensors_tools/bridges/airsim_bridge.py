@@ -169,9 +169,13 @@ class AirsimBridge(BaseBridge):
             rotation = Rotation.from_quat(quat)
             data["pose"] = (translation, rotation)
         self.client_mutex.acquire()
+        start = time.time()
         responses = self.client.simGetImages(self.query_data)
+        print(f"Time to get images: {time.time() - start}")
         self.client_mutex.release()
+        start = time.time()
         img_data = self.process_img_responses(responses)
+        print(f"Time to process images: {time.time() - start}")
         data.update(img_data)
 
         return data

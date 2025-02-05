@@ -30,9 +30,6 @@ class TestBridgeConfig(BaseBridgeConfig):
     """
         Configuration class for Test
     """
-    data_types: List[TestSensorDataTypes] = field(default_factory=list, metadata={"default": ["rgb", "pose"]})
-    """ Data types to query """
-
     dataset_path: Path = Path("./test_data/")
     """ Path to the dataset """
     
@@ -143,7 +140,8 @@ class TestBridge(BaseBridge):
             Apply increment seq as moving the sensor
         """
         self.increment_seq()
-
+        return True
+    
     def increment_seq(self):
         """
             Increment the sequence number

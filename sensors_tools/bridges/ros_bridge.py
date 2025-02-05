@@ -72,28 +72,11 @@ class ROSBridge(BaseBridge):
         # Members
         self.rgb = None
         self.depth = None
-        self.pose
+        self.pose = None
         self.semantic_gt = None
         self.has_camera_info = False
         self.has_depth_camera_info = False
         # Init ros subscribers
-
-        # Sync rgb and depth if they are both present
-        if "rgb" in self.cfg.data_types and "depth" in self.cfg.data_types:
-            self.bridge = cv_bridge.CvBridge()
-            self.rgb_sub = Subscriber(self.cfg.rgb_topic, RosImage)
-            self.depth_sub = Subscriber(self.cfg.depth_topic, RosImage)
-            self.sync = ApproximateTimeSynchronizer([self.rgb_sub, self.depth_sub], 10, 0.1)
-            self.sync.registerCallback(self.sync_callback)
-            self.camera_info_sub = rospy.Subscriber(self.cfg.camera_info_topic, CameraInfo, self.camera_info_callback)
-            self.depth_camera_info_sub = rospy.Subscriber(self.cfg.camera_info_topic, CameraInfo, self.depth_camera_info_callback)
-        else:
-            if "rgb" in self.cfg.data_types:
-                self.rgb_sub = rospy.Subscriber(self.cfg.rgb_topic, RosImage, self.rgb_callback)
-                self.camera_info_sub = rospy.Subscriber(self.cfg.camera_info_topic, CameraInfo, self.camera_info_callback)
-            if "depth" in self.cfg.data_types:
-                self.depth_sub = rospy.Subscriber(self.cfg.depth_topic, RosImage, self.depth_callback)
-                self.depth_camera_info_sub = rospy.Subscriber(self.cfg.camera_info_topic, CameraInfo, self.depth_camera_info_callback)
 
         # TF listener
         if "pose" in self.cfg.data_types:
@@ -103,15 +86,30 @@ class ROSBridge(BaseBridge):
         # RELEVANT CAMERA DATA
         if "rgb" in self.cfg.data_types:
             # Wait for the camera_info topic to be published
+            self.camera_info_sub = rospy.Subscriber(self.cfg.camera_info_topic, CameraInfo, self.camera_info_callback)
             while not self.has_camera_info:
-                rospy.loginfo("Waiting for camera_info topic to be published")
+                rospy.loginfo(f"Waiting for {self.cfg.camera_info_topic} topic to be published")
                 rospy.sleep(1)
 
         if "depth" in self.cfg.data_types:
             # Wait for the depth camera_info topic to be published
+            self.depth_camera_info_sub = rospy.Subscriber(self.cfg.camera_info_topic, CameraInfo, self.depth_camera_info_callback)
             while not self.has_depth_camera_info:
-                rospy.loginfo("Waiting for depth camera_info topic to be published")
+                rospy.loginfo(f"Waiting for depth {self.cfg.camera_info_topic} topic to be published")
                 rospy.sleep(1)
+
+        # Sync rgb and depth if they are both present
+        self.cv_bridge = cv_bridge.CvBridge()
+        if "rgb" in self.cfg.data_types and "depth" in self.cfg.data_types:
+            self.rgb_sub = Subscriber(self.cfg.rgb_topic, RosImage)
+            self.depth_sub = Subscriber(self.cfg.depth_topic, RosImage)
+            self.sync = ApproximateTimeSynchronizer([self.rgb_sub, self.depth_sub], 10, 0.1)
+            self.sync.registerCallback(self.sync_callback)
+        else:
+            if "rgb" in self.cfg.data_types:
+                self.rgb_sub = rospy.Subscriber(self.cfg.rgb_topic, RosImage, self.rgb_callback)
+            if "depth" in self.cfg.data_types:
+                self.depth_sub = rospy.Subscriber(self.cfg.depth_topic, RosImage, self.depth_callback)
 
     def camera_info_callback(self, data: CameraInfo):
         """
@@ -155,7 +153,7 @@ class ROSBridge(BaseBridge):
         """
         Callback for the rgb image
         """
-        self.rgb = self.bridge.imgmsg_to_cv2(data, "rgb8")
+        self.rgb = self.cv_bridge.imgmsg_to_cv2(data, "rgb8")
 
         # Move to a different callback
         if "pose" in self.cfg.data_types:
@@ -184,7 +182,9 @@ class ROSBridge(BaseBridge):
         """
         Callback for the depth image
         """
-        self.depth = self.bridge.imgmsg_to_cv2(data, "passthrough") / 1000.0 # Convert to meters
+        self.depth = self.cv_bridge.imgmsg_to_cv2(data, "passthrough") / 1000.0 # Convert to meters
+        # Resize depth to color size
+        self.depth = cv2.resize(self.depth, (self.width, self.height))
 
     def get_data(self) -> dict:
         """

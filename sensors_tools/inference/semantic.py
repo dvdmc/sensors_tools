@@ -19,11 +19,11 @@ class SemanticInferenceConfig:
     """
         Configuration class for the semantic inference
     """
-    model_name: str = "deeplabv3_resnet50"
-    """ Name of the model to be used """
-
-    inference_type: str = "deterministic"
-    """ Type of inference to be performed """
+    model_name: str = "deeplabv3_resnet50_deterministic"
+    """ Name of the model to be used.
+        It follows the convention: <general_model>_<specific_model>_<inference_type>
+        Examples: deeplabv3_resnet50_deterministic, clip_ViT-L/14@336px_open
+    """
 
     num_classes: int = 21
     """ Number of classes for the semantic inference """
@@ -54,14 +54,8 @@ class SemanticInference:
 
         # Setup the semantic inference model
         custom_weights: bool = self.cfg.weights_path is not None # TODO: Handle this correctly
-        self.model = get_model(self.cfg.inference_type, self.cfg, pretrained = True)
-
-        self.model.to(self.gpu_device)
+        self.model, self.preprocess = get_model(self.cfg, self.gpu_device, pretrained = True)
         self.model.eval()
-    
-        self.transform_img = transforms.Compose([transforms.ToTensor(),
-                                            transforms.Resize((self.cfg.height, self.cfg.width), antialias=True), # type: ignore
-                                            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),])
 
         self.softmax = torch.nn.Softmax(dim=1).to(self.gpu_device) # Assumes it is applied to batch
         
@@ -82,10 +76,10 @@ class SemanticInference:
         # r[self.pred_class_prob < 0.5] = 0
         r = Image.fromarray(r)
         # Convert the image to RGBA for merging with RGB image
-        r = r.convert('RGBA').resize((self.cfg.width, self.cfg.height), resample=Image.NEAREST)
-        datas = r.getdata()
+        r = r.convert('RGBA').resize((self.cfg.width, self.cfg.height), resample=Image.Resampling.NEAREST)
+        datas = r.getdata() # This returns an internal PIL sequence data type. We ignore its type below
         newData = []
-        for item in datas:
+        for item in datas: # type: ignore
             if item[0] == 0 and item[1] == 0 and item[2] == 0:
                 newData.append((0, 0, 0, 0))
             else:
@@ -109,12 +103,13 @@ class SemanticInference:
         """
         prev_width = img.shape[1]
         prev_height = img.shape[0]
-        recover_size = transforms.Resize((self.cfg.height, self.cfg.width), interpolation=Image.NEAREST)
-        img_t: torch.Tensor = self.transform_img(img)
+        recover_size = transforms.Resize((self.cfg.height, self.cfg.width), interpolation=transforms.InterpolationMode.NEAREST)
+        # We force below to be a tensor
+        img_t: torch.Tensor = self.preprocess(img) # type: ignore
         img_t = img_t.unsqueeze(0)
         img_t = img_t.to(self.gpu_device)
         with torch.no_grad():
-            output_logs = self.model(img_t) # TODO: We have to change this to handle generic outputs instead of deeplabv3 outputs
+            output_logs = self.model(img_t)['out'] # TODO: We have to change this to handle generic outputs instead of deeplabv3 outputs
             probs = self.softmax(output_logs)
 
         probs = recover_size(probs[0]) # Remove batch dimension

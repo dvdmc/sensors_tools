@@ -1,5 +1,6 @@
 import numpy as np
 
+
 # A function that obtains the different colors of an image
 def compute_class_colors(rgb_image, prev_class_colors=[]):
     """A function that obtains the different colors of an image as integers
@@ -14,13 +15,14 @@ def compute_class_colors(rgb_image, prev_class_colors=[]):
                 class_colors.append(pixel.tolist())
     return class_colors
 
+
 def get_color_map(dataset_name: str, bgr: bool = True) -> np.ndarray:
     """
-        Get the color map for the dataset
-        Args:
-            dataset_name: name of the dataset
-        Returns:
-            color_map: color map for the dataset
+    Get the color map for the dataset
+    Args:
+        dataset_name: name of the dataset
+    Returns:
+        color_map: color map for the dataset
     """
     if dataset_name == "coco_voc":
         color_map = get_pascal_labels(bgr=bgr)
@@ -32,17 +34,22 @@ def get_color_map(dataset_name: str, bgr: bool = True) -> np.ndarray:
         color_map = get_nyu2_14_classes(bgr=bgr)
     elif dataset_name == "airsim":
         color_map = get_airsim_labels(bgr=bgr)
+    elif dataset_name == "binary":
+        color_map = get_binary_labels(bgr=bgr)
+    elif dataset_name == "ade20k":
+        color_map = get_ade20k_labels(bgr=bgr)
     else:
         raise ValueError(f"Dataset {dataset_name} not supported")
     return color_map
 
+
 def get_label_mapper(mapper_name: str) -> dict:
     """
-        Get the label mapper for the dataset
-        Args:
-            mapper_name: name of the mapper
-        Returns:
-            label_mapper: label mapper for the dataset
+    Get the label mapper for the dataset
+    Args:
+        mapper_name: name of the mapper
+    Returns:
+        label_mapper: label mapper for the dataset
     """
     if mapper_name == "coco_voc_2_pascal_8":
         label_mapper = get_coco_voc_2_pascal_8_label_mapper()
@@ -50,39 +57,33 @@ def get_label_mapper(mapper_name: str) -> dict:
         raise ValueError(f"Mapper {mapper_name} not supported")
     return label_mapper
 
+
 def get_coco_voc_2_pascal_8_label_mapper() -> dict:
     """
-        Get the label mapper for the dataset
-        Args:
-            mapper_name: name of the mapper
-        Returns:
-            label_mapper: label mapper for the dataset
+    Get the label mapper for the dataset
+    Args:
+        mapper_name: name of the mapper
+    Returns:
+        label_mapper: label mapper for the dataset
     """
-    label_mapper = {
-        0: 0,
-        5: 1,
-        9: 2,
-        11: 3,
-        15: 4,
-        16: 5,
-        18: 6,
-        20: 7
-    }
+    label_mapper = {0: 0, 5: 1, 9: 2, 11: 3, 15: 4, 16: 5, 18: 6, 20: 7}
     return label_mapper
+
 
 def apply_label_map(label_image: np.ndarray, label_map: dict) -> np.ndarray:
     """
-        Apply the label map to the labels
-        Args:
-            label_map: label mapper
-            labels: labels to be mapped
-        Returns:
-            mapped_labels: mapped labels
+    Apply the label map to the labels
+    Args:
+        label_map: label mapper
+        labels: labels to be mapped
+    Returns:
+        mapped_labels: mapped labels
     """
     mapped_labels = np.zeros_like(label_image)
     for key, value in label_map.items():
         mapped_labels[label_image == key] = value
     return mapped_labels
+
 
 def get_pascal_labels(bgr=False):
     """Load the mapping that associates pascal classes with label colors
@@ -118,6 +119,169 @@ def get_pascal_labels(bgr=False):
         color_map = color_map[:, ::-1]
     return color_map
 
+
+def get_ade20k_labels(bgr=False):
+    color_map = np.array(
+        [
+            [0, 0, 0],
+            [120, 120, 120],
+            [180, 120, 120],
+            [6, 230, 230],
+            [80, 50, 50],
+            [4, 200, 3],
+            [120, 120, 80],
+            [140, 140, 140],
+            [204, 5, 255],
+            [230, 230, 230],
+            [4, 250, 7],
+            [224, 5, 255],
+            [235, 255, 7],
+            [150, 5, 61],
+            [120, 120, 70],
+            [8, 255, 51],
+            [255, 6, 82],
+            [143, 255, 140],
+            [204, 255, 4],
+            [255, 51, 7],
+            [204, 70, 3],
+            [0, 102, 200],
+            [61, 230, 250],
+            [255, 6, 51],
+            [11, 102, 255],
+            [255, 7, 71],
+            [255, 9, 224],
+            [9, 7, 230],
+            [220, 220, 220],
+            [255, 9, 92],
+            [112, 9, 255],
+            [8, 255, 214],
+            [7, 255, 224],
+            [255, 184, 6],
+            [10, 255, 71],
+            [255, 41, 10],
+            [7, 255, 255],
+            [224, 255, 8],
+            [102, 8, 255],
+            [255, 61, 6],
+            [255, 194, 7],
+            [255, 122, 8],
+            [0, 255, 20],
+            [255, 8, 41],
+            [255, 5, 153],
+            [6, 51, 255],
+            [235, 12, 255],
+            [160, 150, 20],
+            [0, 163, 255],
+            [140, 140, 140],
+            [250, 10, 15],
+            [20, 255, 0],
+            [31, 255, 0],
+            [255, 31, 0],
+            [255, 224, 0],
+            [153, 255, 0],
+            [0, 0, 255],
+            [255, 71, 0],
+            [0, 235, 255],
+            [0, 173, 255],
+            [31, 0, 255],
+            [11, 200, 200],
+            [255, 82, 0],
+            [0, 255, 245],
+            [0, 61, 255],
+            [0, 255, 112],
+            [0, 255, 133],
+            [255, 0, 0],
+            [255, 163, 0],
+            [255, 102, 0],
+            [194, 255, 0],
+            [0, 143, 255],
+            [51, 255, 0],
+            [0, 82, 255],
+            [0, 255, 41],
+            [0, 255, 173],
+            [10, 0, 255],
+            [173, 255, 0],
+            [0, 255, 153],
+            [255, 92, 0],
+            [255, 0, 255],
+            [255, 0, 245],
+            [255, 0, 102],
+            [255, 173, 0],
+            [255, 0, 20],
+            [255, 184, 184],
+            [0, 31, 255],
+            [0, 255, 61],
+            [0, 71, 255],
+            [255, 0, 204],
+            [0, 255, 194],
+            [0, 255, 82],
+            [0, 10, 255],
+            [0, 112, 255],
+            [51, 0, 255],
+            [0, 194, 255],
+            [0, 122, 255],
+            [0, 255, 163],
+            [255, 153, 0],
+            [0, 255, 10],
+            [255, 112, 0],
+            [143, 255, 0],
+            [82, 0, 255],
+            [163, 255, 0],
+            [255, 235, 0],
+            [8, 184, 170],
+            [133, 0, 255],
+            [0, 255, 92],
+            [184, 0, 255],
+            [255, 0, 31],
+            [0, 184, 255],
+            [0, 214, 255],
+            [255, 0, 112],
+            [92, 255, 0],
+            [0, 224, 255],
+            [112, 224, 255],
+            [70, 184, 160],
+            [163, 0, 255],
+            [153, 0, 255],
+            [71, 255, 0],
+            [255, 0, 163],
+            [255, 204, 0],
+            [255, 0, 143],
+            [0, 255, 235],
+            [133, 255, 0],
+            [255, 0, 235],
+            [245, 0, 255],
+            [255, 0, 122],
+            [255, 245, 0],
+            [10, 190, 212],
+            [214, 255, 0],
+            [0, 204, 255],
+            [20, 0, 255],
+            [255, 255, 0],
+            [0, 153, 255],
+            [0, 41, 255],
+            [0, 255, 204],
+            [41, 0, 255],
+            [41, 255, 0],
+            [173, 0, 255],
+            [0, 245, 255],
+            [71, 0, 255],
+            [122, 0, 255],
+            [0, 255, 184],
+            [0, 92, 255],
+            [184, 255, 0],
+            [0, 133, 255],
+            [255, 214, 0],
+            [25, 194, 194],
+            [102, 255, 0],
+            [92, 0, 255],
+        ]
+    )
+    if bgr:
+        color_map = color_map[:, ::-1]
+    return color_map
+
+
+# Source: https://github.com/facebookresearch/dinov2/blob/main/dinov2/eval/segmentation/utils/colormaps.py
 def get_pascal_labels_names():
     return [
         "background",
@@ -143,6 +307,7 @@ def get_pascal_labels_names():
         "tv/monitor",
     ]
 
+
 def get_pascal_8_labels_names():
     return [
         "background",
@@ -154,6 +319,163 @@ def get_pascal_8_labels_names():
         "sofa",
         "tv/monitor",
     ]
+
+
+def get_ade20k_labels_names():
+    return [
+        "",
+        "wall",
+        "building;edifice",
+        "sky",
+        "floor;flooring",
+        "tree",
+        "ceiling",
+        "road;route",
+        "bed",
+        "windowpane;window",
+        "grass",
+        "cabinet",
+        "sidewalk;pavement",
+        "person;individual;someone;somebody;mortal;soul",
+        "earth;ground",
+        "door;double;door",
+        "table",
+        "mountain;mount",
+        "plant;flora;plant;life",
+        "curtain;drape;drapery;mantle;pall",
+        "chair",
+        "car;auto;automobile;machine;motorcar",
+        "water",
+        "painting;picture",
+        "sofa;couch;lounge",
+        "shelf",
+        "house",
+        "sea",
+        "mirror",
+        "rug;carpet;carpeting",
+        "field",
+        "armchair",
+        "seat",
+        "fence;fencing",
+        "desk",
+        "rock;stone",
+        "wardrobe;closet;press",
+        "lamp",
+        "bathtub;bathing;tub;bath;tub",
+        "railing;rail",
+        "cushion",
+        "base;pedestal;stand",
+        "box",
+        "column;pillar",
+        "signboard;sign",
+        "chest;of;drawers;chest;bureau;dresser",
+        "counter",
+        "sand",
+        "sink",
+        "skyscraper",
+        "fireplace;hearth;open;fireplace",
+        "refrigerator;icebox",
+        "grandstand;covered;stand",
+        "path",
+        "stairs;steps",
+        "runway",
+        "case;display;case;showcase;vitrine",
+        "pool;table;billiard;table;snooker;table",
+        "pillow",
+        "screen;door;screen",
+        "stairway;staircase",
+        "river",
+        "bridge;span",
+        "bookcase",
+        "blind;screen",
+        "coffee;table;cocktail;table",
+        "toilet;can;commode;crapper;pot;potty;stool;throne",
+        "flower",
+        "book",
+        "hill",
+        "bench",
+        "countertop",
+        "stove;kitchen;stove;range;kitchen;range;cooking;stove",
+        "palm;palm;tree",
+        "kitchen;island",
+        "computer;computing;machine;computing;device;data;processor;electronic;computer;information;processing;system",
+        "swivel;chair",
+        "boat",
+        "bar",
+        "arcade;machine",
+        "hovel;hut;hutch;shack;shanty",
+        "bus;autobus;coach;charabanc;double-decker;jitney;motorbus;motorcoach;omnibus;passenger;vehicle",
+        "towel",
+        "light;light;source",
+        "truck;motortruck",
+        "tower",
+        "chandelier;pendant;pendent",
+        "awning;sunshade;sunblind",
+        "streetlight;street;lamp",
+        "booth;cubicle;stall;kiosk",
+        "television;television;receiver;television;set;tv;tv;set;idiot;box;boob;tube;telly;goggle;box",
+        "airplane;aeroplane;plane",
+        "dirt;track",
+        "apparel;wearing;apparel;dress;clothes",
+        "pole",
+        "land;ground;soil",
+        "bannister;banister;balustrade;balusters;handrail",
+        "escalator;moving;staircase;moving;stairway",
+        "ottoman;pouf;pouffe;puff;hassock",
+        "bottle",
+        "buffet;counter;sideboard",
+        "poster;posting;placard;notice;bill;card",
+        "stage",
+        "van",
+        "ship",
+        "fountain",
+        "conveyer;belt;conveyor;belt;conveyer;conveyor;transporter",
+        "canopy",
+        "washer;automatic;washer;washing;machine",
+        "plaything;toy",
+        "swimming;pool;swimming;bath;natatorium",
+        "stool",
+        "barrel;cask",
+        "basket;handbasket",
+        "waterfall;falls",
+        "tent;collapsible;shelter",
+        "bag",
+        "minibike;motorbike",
+        "cradle",
+        "oven",
+        "ball",
+        "food;solid;food",
+        "step;stair",
+        "tank;storage;tank",
+        "trade;name;brand;name;brand;marque",
+        "microwave;microwave;oven",
+        "pot;flowerpot",
+        "animal;animate;being;beast;brute;creature;fauna",
+        "bicycle;bike;wheel;cycle",
+        "lake",
+        "dishwasher;dish;washer;dishwashing;machine",
+        "screen;silver;screen;projection;screen",
+        "blanket;cover",
+        "sculpture",
+        "hood;exhaust;hood",
+        "sconce",
+        "vase",
+        "traffic;light;traffic;signal;stoplight",
+        "tray",
+        "ashcan;trash;can;garbage;can;wastebin;ash;bin;ash-bin;ashbin;dustbin;trash;barrel;trash;bin",
+        "fan",
+        "pier;wharf;wharfage;dock",
+        "crt;screen",
+        "plate",
+        "monitor;monitoring;device",
+        "bulletin;board;notice;board",
+        "shower",
+        "radiator",
+        "glass;drinking;glass",
+        "clock",
+        "flag",
+    ]
+
 
 # Get pascal labels without background
 def get_pascal_labels_wo_background(bgr=False):
@@ -188,6 +510,7 @@ def get_pascal_labels_wo_background(bgr=False):
     if bgr:
         color_map = color_map[:, ::-1]
     return color_map
+
 
 def get_pascal_8_labels(bgr=False):
     """Load the mapping that associates 7 pascal classes with label colors
@@ -230,6 +553,7 @@ def get_pascal_7_labels_wo_background(bgr=False):
     if bgr:
         color_map = color_map[:, ::-1]
     return color_map
+
 
 def get_nyu2_40_labels(bgr=False):
     """Load the mapping that associates NYU2 classes with label colors
@@ -285,6 +609,7 @@ def get_nyu2_40_labels(bgr=False):
         color_map = color_map[:, ::-1]
     return color_map
 
+
 def get_nyu2_39_labels_wo_background(bgr=False):
     """Load the mapping that associates NYU2 classes with label colors
     Returns:
@@ -338,6 +663,7 @@ def get_nyu2_39_labels_wo_background(bgr=False):
     if bgr:
         color_map = color_map[:, ::-1]
     return color_map
+
 
 def get_nyu2_14_classes(bgr=False):
     """Load the mapping that associates NYU2 classes with label colors
@@ -399,6 +725,7 @@ def get_airsim_labels(bgr=False):
         color_map = color_map[:, ::-1]
     return color_map
 
+
 def get_airsim_labels2(bgr=False):
 
     color_map = np.array(
@@ -417,6 +744,20 @@ def get_airsim_labels2(bgr=False):
         color_map = color_map[:, ::-1]
     return color_map
 
+
+def get_binary_labels(bgr=False):
+
+    color_map = np.array(
+        [
+            [0, 0, 0],  # 0=background
+            [255, 20, 20],  # 1=foreground
+        ]
+    )
+    if bgr:
+        color_map = color_map[:, ::-1]
+    return color_map
+
+
 # Transform rgb colors to class labels
 def rgb_to_class(rgb_image, class_colors):
     """A function that converts each color of an rgb image in a matrix with class labels (class_colors can be getPascalLabels())
@@ -431,25 +772,27 @@ def rgb_to_class(rgb_image, class_colors):
         class_image[mask] = class_label
     return class_image
 
+
 # Transform class labels to rgb colors
 def class_to_rgb(class_image, class_colors):
     """A function that converts each class label of a class image in a matrix with rgb colors (class_colors can be getPascalLabels())
     Returns:
         rgb_image: a matrix with the same shape as the input image, where each pixel is a rgb color
     """
-    rgb_image = np.zeros(
-        (class_image.shape[0], class_image.shape[1], 3), dtype=np.uint8)
+    rgb_image = np.zeros((class_image.shape[0], class_image.shape[1], 3), dtype=np.uint8)
     for class_label, class_color in enumerate(class_colors):
         mask = class_image == class_label
         rgb_image[mask] = class_color
     return rgb_image
 
-def label2rgb(label_map, label_colors): # Not related to sent info, only display
+
+def label2rgb(label_map, label_colors):  # Not related to sent info, only display
     num_classes = label_colors.shape[0]
     label_colors = label_colors[:num_classes, :]
     rgb_label_map = class_to_rgb(label_map, label_colors)
 
     return rgb_label_map
+
 
 def rgb2label(self, rgb_label_map, label_colors):
     num_classes = label_colors.shape[0]
@@ -459,66 +802,298 @@ def rgb2label(self, rgb_label_map, label_colors):
     return label_map
 
 
-
 # Color map used in ADE20K dataset
-ADE20K_COLOR_MAP = np.array([
-    [120, 120, 120], [180, 120, 120], [6, 230, 230], [80, 50, 50], [4, 200, 3], 
-    [120, 120, 80], [140, 140, 140], [204, 5, 255], [230, 230, 230], [4, 250, 7], 
-    [224, 5, 255], [235, 255, 7], [150, 5, 61], [120, 120, 70], [8, 255, 51], 
-    [255, 6, 82], [143, 255, 140], [204, 255, 4], [255, 51, 7], [204, 70, 3], 
-    [0, 102, 200], [61, 230, 250], [255, 6, 51], [11, 102, 255], [255, 7, 71], 
-    [255, 9, 224], [9, 7, 230], [220, 220, 220], [255, 9, 92], [112, 9, 255], 
-    [8, 255, 214], [7, 255, 224], [255, 184, 6], [10, 255, 71], [255, 41, 10], 
-    [7, 255, 255], [224, 255, 8], [102, 8, 255], [255, 61, 6], [255, 194, 7], 
-    [255, 122, 8], [0, 255, 20], [255, 8, 41], [255, 5, 153], [6, 51, 255], 
-    [235, 12, 255], [160, 150, 20], [0, 163, 255], [140, 140, 140], [250, 10, 15], 
-    [20, 255, 0], [31, 255, 0], [255, 31, 0], [255, 224, 0], [153, 255, 0], 
-    [0, 0, 255], [255, 71, 0], [0, 235, 255], [0, 173, 255], [31, 0, 255],
-    [11, 200, 200], [255 ,82, 0], [0, 255, 245], [0, 61, 255], [0, 255, 112], 
-    [0, 255, 133], [255, 0, 0], [255, 163, 0], [255, 102, 0], [194, 255, 0], 
-    [0, 143, 255], [51, 255, 0], [0, 82, 255], [0, 255, 41], [0, 255, 173], 
-    [10, 0, 255], [173, 255, 0], [0, 255, 153], [255, 92, 0], [255, 0, 255], 
-    [255, 0, 245], [255, 0, 102], [255, 173, 0], [255, 0, 20], [255, 184, 184], 
-    [0, 31, 255], [0, 255, 61], [0, 71, 255], [255, 0, 204], [0, 255, 194], 
-    [0, 255, 82], [0, 10, 255], [0, 112, 255], [51, 0, 255], [0, 194, 255], 
-    [0, 122, 255], [0, 255, 163], [255, 153, 0], [0, 255, 10], [255, 112, 0], 
-    [143, 255, 0], [82, 0, 255], [163, 255, 0], [255, 235, 0], [8, 184, 170], 
-    [133, 0, 255], [0, 255, 92], [184, 0, 255], [255, 0, 31], [0, 184, 255], 
-    [0, 214, 255], [255, 0, 112], [92, 255, 0], [0, 224, 255], [112, 224, 255],
-    [70, 184, 160], [163, 0, 255], [153, 0, 255], [71, 255, 0], [255, 0, 163], 
-    [255, 204, 0], [255, 0, 143], [0, 255, 235], [133, 255, 0], [255, 0, 235], 
-    [245, 0, 255], [255, 0, 122], [255, 245, 0], [10, 190, 212], [214, 255, 0], 
-    [0, 204, 255], [20, 0, 255], [255, 255, 0], [0, 153, 255], [0, 41, 255], 
-    [0, 255, 204], [41, 0, 255], [41, 255, 0], [173, 0, 255], [0, 245, 255], 
-    [71, 0, 255], [122, 0, 255], [0, 255, 184], [0, 92, 255], [184, 255, 0], 
-    [0, 133, 255], [255, 214, 0], [25, 194, 194], [102, 255, 0], [92, 0, 255]])
+ADE20K_COLOR_MAP = np.array(
+    [
+        [120, 120, 120],
+        [180, 120, 120],
+        [6, 230, 230],
+        [80, 50, 50],
+        [4, 200, 3],
+        [120, 120, 80],
+        [140, 140, 140],
+        [204, 5, 255],
+        [230, 230, 230],
+        [4, 250, 7],
+        [224, 5, 255],
+        [235, 255, 7],
+        [150, 5, 61],
+        [120, 120, 70],
+        [8, 255, 51],
+        [255, 6, 82],
+        [143, 255, 140],
+        [204, 255, 4],
+        [255, 51, 7],
+        [204, 70, 3],
+        [0, 102, 200],
+        [61, 230, 250],
+        [255, 6, 51],
+        [11, 102, 255],
+        [255, 7, 71],
+        [255, 9, 224],
+        [9, 7, 230],
+        [220, 220, 220],
+        [255, 9, 92],
+        [112, 9, 255],
+        [8, 255, 214],
+        [7, 255, 224],
+        [255, 184, 6],
+        [10, 255, 71],
+        [255, 41, 10],
+        [7, 255, 255],
+        [224, 255, 8],
+        [102, 8, 255],
+        [255, 61, 6],
+        [255, 194, 7],
+        [255, 122, 8],
+        [0, 255, 20],
+        [255, 8, 41],
+        [255, 5, 153],
+        [6, 51, 255],
+        [235, 12, 255],
+        [160, 150, 20],
+        [0, 163, 255],
+        [140, 140, 140],
+        [250, 10, 15],
+        [20, 255, 0],
+        [31, 255, 0],
+        [255, 31, 0],
+        [255, 224, 0],
+        [153, 255, 0],
+        [0, 0, 255],
+        [255, 71, 0],
+        [0, 235, 255],
+        [0, 173, 255],
+        [31, 0, 255],
+        [11, 200, 200],
+        [255, 82, 0],
+        [0, 255, 245],
+        [0, 61, 255],
+        [0, 255, 112],
+        [0, 255, 133],
+        [255, 0, 0],
+        [255, 163, 0],
+        [255, 102, 0],
+        [194, 255, 0],
+        [0, 143, 255],
+        [51, 255, 0],
+        [0, 82, 255],
+        [0, 255, 41],
+        [0, 255, 173],
+        [10, 0, 255],
+        [173, 255, 0],
+        [0, 255, 153],
+        [255, 92, 0],
+        [255, 0, 255],
+        [255, 0, 245],
+        [255, 0, 102],
+        [255, 173, 0],
+        [255, 0, 20],
+        [255, 184, 184],
+        [0, 31, 255],
+        [0, 255, 61],
+        [0, 71, 255],
+        [255, 0, 204],
+        [0, 255, 194],
+        [0, 255, 82],
+        [0, 10, 255],
+        [0, 112, 255],
+        [51, 0, 255],
+        [0, 194, 255],
+        [0, 122, 255],
+        [0, 255, 163],
+        [255, 153, 0],
+        [0, 255, 10],
+        [255, 112, 0],
+        [143, 255, 0],
+        [82, 0, 255],
+        [163, 255, 0],
+        [255, 235, 0],
+        [8, 184, 170],
+        [133, 0, 255],
+        [0, 255, 92],
+        [184, 0, 255],
+        [255, 0, 31],
+        [0, 184, 255],
+        [0, 214, 255],
+        [255, 0, 112],
+        [92, 255, 0],
+        [0, 224, 255],
+        [112, 224, 255],
+        [70, 184, 160],
+        [163, 0, 255],
+        [153, 0, 255],
+        [71, 255, 0],
+        [255, 0, 163],
+        [255, 204, 0],
+        [255, 0, 143],
+        [0, 255, 235],
+        [133, 255, 0],
+        [255, 0, 235],
+        [245, 0, 255],
+        [255, 0, 122],
+        [255, 245, 0],
+        [10, 190, 212],
+        [214, 255, 0],
+        [0, 204, 255],
+        [20, 0, 255],
+        [255, 255, 0],
+        [0, 153, 255],
+        [0, 41, 255],
+        [0, 255, 204],
+        [41, 0, 255],
+        [41, 255, 0],
+        [173, 0, 255],
+        [0, 245, 255],
+        [71, 0, 255],
+        [122, 0, 255],
+        [0, 255, 184],
+        [0, 92, 255],
+        [184, 255, 0],
+        [0, 133, 255],
+        [255, 214, 0],
+        [25, 194, 194],
+        [102, 255, 0],
+        [92, 0, 255],
+    ]
+)
 
 # Generic color map from COCO dataset
-COCO_COLOR_MAP = np.array([
-    [0, 0, 0], [220, 20, 60], [119, 11, 32], [0, 0, 142], [0, 0, 230], 
-    [106, 0, 228], [0, 60, 100], [0, 80, 100], [0, 0, 70], [0, 0, 192], 
-    [250, 170, 30], [100, 170, 30], [220, 220, 0], [175, 116, 175], [250, 0, 30], 
-    [165, 42, 42], [255, 77, 255], [0, 226, 252], [182, 182, 255], [0, 82, 0], 
-    [120, 166, 157], [110, 76, 0], [174, 57, 255], [199, 100, 0], [72, 0, 118], 
-    [255, 179, 240], [0, 125, 92], [209, 0, 151], [188, 208, 182], [0, 220, 176], 
-    [255, 99, 164], [92, 0, 73], [133, 129, 255], [78, 180, 255], [0, 228, 0], 
-    [174, 255, 243], [45, 89, 255], [134, 134, 103], [145, 148, 174], [255, 208, 186], 
-    [197, 226, 255], [171, 134, 1], [109, 63, 54], [207, 138, 255], [151, 0, 95], 
-    [9, 80, 61], [84, 105, 51], [74, 65, 105], [166, 196, 102], [208, 195, 210], 
-    [255, 109, 65], [0, 143, 149], [179, 0, 194], [209, 99, 106], [5, 121, 0],
-    [227, 255, 205], [147, 186, 208], [153, 69, 1], [3, 95, 161], [163, 255, 0], 
-    [119, 0, 170], [0, 182, 199], [0, 165, 120], [183, 130, 88], [95, 32, 0], 
-    [130, 114, 135], [110, 129, 133], [166, 74, 118], [219, 142, 185], [79, 210, 114], 
-    [178, 90, 62], [65, 70, 15], [127, 167, 115], [59, 105, 106], [142, 108, 45], 
-    [196, 172, 0], [95, 54, 80], [128, 76, 255], [201, 57, 1], [246, 0, 122], 
-    [191, 162, 208], [255, 255, 128], [147, 211, 203], [150, 100, 100], [168, 171, 172], 
-    [146, 112, 198], [210, 170, 100], [92, 136, 89], [218, 88, 184], [241, 129, 0], 
-    [217, 17, 255], [124, 74, 181], [70, 70, 70], [255, 228, 255], [154, 208, 0], 
-    [193, 0, 92], [76, 91, 113], [255, 180, 195], [106, 154, 176], [230, 150, 140], 
-    [60, 143, 255], [128, 64, 128], [92, 82, 55], [254, 212, 124], [73, 77, 174], 
-    [255, 160, 98], [255, 255, 255], [104, 84, 109], [169, 164, 131], [225, 199, 255],
-    [137, 54, 74], [135, 158, 223], [7, 246, 231], [107, 255, 200], [58, 41, 149], 
-    [183, 121, 142], [255, 73, 97], [107, 142, 35], [190, 153, 153], [146, 139, 141], 
-    [70, 130, 180], [134, 199, 156], [209, 226, 140], [96, 36, 108], [96, 96, 96], 
-    [64, 170, 64], [152, 251, 152], [208, 229, 228], [206, 186, 171], [152, 161, 64], 
-    [116, 112, 0], [0, 114, 143], [102, 102, 156], [250, 141, 255]])
+COCO_COLOR_MAP = np.array(
+    [
+        [0, 0, 0],
+        [220, 20, 60],
+        [119, 11, 32],
+        [0, 0, 142],
+        [0, 0, 230],
+        [106, 0, 228],
+        [0, 60, 100],
+        [0, 80, 100],
+        [0, 0, 70],
+        [0, 0, 192],
+        [250, 170, 30],
+        [100, 170, 30],
+        [220, 220, 0],
+        [175, 116, 175],
+        [250, 0, 30],
+        [165, 42, 42],
+        [255, 77, 255],
+        [0, 226, 252],
+        [182, 182, 255],
+        [0, 82, 0],
+        [120, 166, 157],
+        [110, 76, 0],
+        [174, 57, 255],
+        [199, 100, 0],
+        [72, 0, 118],
+        [255, 179, 240],
+        [0, 125, 92],
+        [209, 0, 151],
+        [188, 208, 182],
+        [0, 220, 176],
+        [255, 99, 164],
+        [92, 0, 73],
+        [133, 129, 255],
+        [78, 180, 255],
+        [0, 228, 0],
+        [174, 255, 243],
+        [45, 89, 255],
+        [134, 134, 103],
+        [145, 148, 174],
+        [255, 208, 186],
+        [197, 226, 255],
+        [171, 134, 1],
+        [109, 63, 54],
+        [207, 138, 255],
+        [151, 0, 95],
+        [9, 80, 61],
+        [84, 105, 51],
+        [74, 65, 105],
+        [166, 196, 102],
+        [208, 195, 210],
+        [255, 109, 65],
+        [0, 143, 149],
+        [179, 0, 194],
+        [209, 99, 106],
+        [5, 121, 0],
+        [227, 255, 205],
+        [147, 186, 208],
+        [153, 69, 1],
+        [3, 95, 161],
+        [163, 255, 0],
+        [119, 0, 170],
+        [0, 182, 199],
+        [0, 165, 120],
+        [183, 130, 88],
+        [95, 32, 0],
+        [130, 114, 135],
+        [110, 129, 133],
+        [166, 74, 118],
+        [219, 142, 185],
+        [79, 210, 114],
+        [178, 90, 62],
+        [65, 70, 15],
+        [127, 167, 115],
+        [59, 105, 106],
+        [142, 108, 45],
+        [196, 172, 0],
+        [95, 54, 80],
+        [128, 76, 255],
+        [201, 57, 1],
+        [246, 0, 122],
+        [191, 162, 208],
+        [255, 255, 128],
+        [147, 211, 203],
+        [150, 100, 100],
+        [168, 171, 172],
+        [146, 112, 198],
+        [210, 170, 100],
+        [92, 136, 89],
+        [218, 88, 184],
+        [241, 129, 0],
+        [217, 17, 255],
+        [124, 74, 181],
+        [70, 70, 70],
+        [255, 228, 255],
+        [154, 208, 0],
+        [193, 0, 92],
+        [76, 91, 113],
+        [255, 180, 195],
+        [106, 154, 176],
+        [230, 150, 140],
+        [60, 143, 255],
+        [128, 64, 128],
+        [92, 82, 55],
+        [254, 212, 124],
+        [73, 77, 174],
+        [255, 160, 98],
+        [255, 255, 255],
+        [104, 84, 109],
+        [169, 164, 131],
+        [225, 199, 255],
+        [137, 54, 74],
+        [135, 158, 223],
+        [7, 246, 231],
+        [107, 255, 200],
+        [58, 41, 149],
+        [183, 121, 142],
+        [255, 73, 97],
+        [107, 142, 35],
+        [190, 153, 153],
+        [146, 139, 141],
+        [70, 130, 180],
+        [134, 199, 156],
+        [209, 226, 140],
+        [96, 36, 108],
+        [96, 96, 96],
+        [64, 170, 64],
+        [152, 251, 152],
+        [208, 229, 228],
+        [206, 186, 171],
+        [152, 161, 64],
+        [116, 112, 0],
+        [0, 114, 143],
+        [102, 102, 156],
+        [250, 141, 255],
+    ]
+)

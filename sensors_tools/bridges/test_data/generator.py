@@ -60,55 +60,56 @@ def generate_data(num: int) -> tuple:
 def generate_sheeps_img(num: int) -> tuple:
     """
     Generate the images for the "sheeps.png" image and the "sheeps_sem.png" semantic image
-    Instead of the number, use the sheeps and use the sheeps_sem.png with red rgb color for the gt
+    Instead of the number, use the sheeps and use the sheeps_sem.png with red RGB color for the gt
     mask.
     """
-    # Generate the rgb image
+    # Generate the RGB image
     img = np.zeros((HEIGHT, WIDTH, 3), np.uint8)
     img.fill(255)
 
     # Load the sheeps image
     sheeps = cv2.imread("sheeps.png")
-    # Resize the sheeps image to HEIGHT//2 and keep the aspect ratio
-    scale = HEIGHT//2 / sheeps.shape[0]
-    sheeps = cv2.resize(sheeps, (0,0), fx=scale, fy=scale)
+    
+    # Calculate the scale to fill the frame while maintaining aspect ratio
+    scale_w = WIDTH / sheeps.shape[1]
+    scale_h = HEIGHT / sheeps.shape[0]
+    scale = max(scale_w, scale_h)
+    sheeps = cv2.resize(sheeps, (0, 0), fx=scale, fy=scale)
 
-    # Put the sheeps in the center
-    x_offset = WIDTH//2 - sheeps.shape[1]//2
-    y_offset = HEIGHT//2 - sheeps.shape[0]//2
-    #pdb.set_trace()
-    img[y_offset:y_offset+sheeps.shape[0], x_offset:x_offset+sheeps.shape[1]] = sheeps
-
+    # Crop the sheep image to fit exactly in the frame
+    start_x = (sheeps.shape[1] - WIDTH) // 2
+    start_y = (sheeps.shape[0] - HEIGHT) // 2
+    sheeps_cropped = sheeps[start_y:start_y + HEIGHT, start_x:start_x + WIDTH]
+    img = sheeps_cropped
 
     # Generate the depth image
     depth = np.zeros((HEIGHT, WIDTH), np.float32)
-    depth.fill(10*1000)
-    mask = img[:,:,0] != 255
-    depth[mask] = 3*1000
+    depth.fill(10 * 1000)
+    mask = img[:, :, 0] != 255
+    depth[mask] = 3 * 1000
 
     # Generate the semantic image
     # Load the semantic image
     semantic_img = cv2.imread("sheeps_sem.png")
     
-    # Resize the semantic image to HEIGHT//2 and keep the aspect ratio
-    scale = HEIGHT//2 / semantic_img.shape[0]
-    semantic_img = cv2.resize(semantic_img, (0,0), fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST)
+    # Resize and crop the semantic image to match the sheep's appearance
+    semantic_img = cv2.resize(semantic_img, (0, 0), fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST)
+    semantic_cropped = semantic_img[start_y:start_y + HEIGHT, start_x:start_x + WIDTH]
 
     semantic = np.zeros((HEIGHT, WIDTH), np.uint16)
 
     # Create semantic_rgb
     semantic_rgb = np.zeros((HEIGHT, WIDTH, 3), np.uint8)
-    # Put the semantic image in the center
-    semantic_rgb[y_offset:y_offset+semantic_img.shape[0], x_offset:x_offset+semantic_img.shape[1]] = semantic_img
+    semantic_rgb = semantic_cropped
     # Get the mask
-    mask_sheep = semantic_rgb[:,:,2] == 47
-    mask_human = semantic_rgb[:,:,2] == 53
+    mask_sheep = semantic_rgb[:, :, 2] == 47
+    mask_human = semantic_rgb[:, :, 2] == 53
     semantic[mask_sheep] = 17
     semantic[mask_human] = 15
 
     # Generate the pose file
     pose = np.eye(4)
-    pose[0,3] = num
+    pose[0, 3] = num
 
     return img, depth, semantic, semantic_rgb, pose
 

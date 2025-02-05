@@ -15,12 +15,11 @@ from sensors_tools.inference.semantic import SemanticInferenceConfig
 if __name__ == '__main__':
     # Setup the sensor
     bridge_cfg = TestBridgeConfig(data_types=["rgb", "semantic", "depth", "pose"], dataset_path=Path("./bridges/test_data/dataset/"), width=512, height=512)
-    sem_cfg = SemanticInferenceConfig(num_classes=21)
+    sem_cfg = SemanticInferenceConfig(model_name = "deeplabv3_resnet50_deterministic", num_classes=21)
     cfg = SensorConfig(
         bridge_cfg = bridge_cfg,
         bridge_type = "test",
-        inference_cfg = sem_cfg,
-        inference_type = "deterministic"
+        inference_cfg = sem_cfg
     )
 
     sensor = SemanticInferenceSensor(cfg)
@@ -31,6 +30,9 @@ if __name__ == '__main__':
     # Show the images
     for i in range(5):
         data = sensor.get_data()
+        if(data is None):
+            print("Sensor is not ready")
+            continue
         ax[0].imshow(data["rgb"])
         # Titles
         ax[0].set_title("RGB")

@@ -1,0 +1,18 @@
+<launch>
+    <!-- Realsense -->
+   <include file="$(find realsense2_camera)/launch/rs_camera.launch">
+      <arg name="filters" value="pointcloud"/>
+      <arg name="align_depth" value="true"/>
+      <arg name="color_fps" value="15"/>
+      <arg name="depth_fps" value="15"/>
+   </include>
+
+    <node pkg="sensors_tools_ros" type="semantic_node.py" name="semantic_sensor" output="screen">
+        <rosparam command="load" file="$(find sensors_tools_ros)/cfg/sensor_rs_open_trident.yaml" />
+    </node>
+
+    <node pkg="rviz" type="rviz" name="rviz" args="-d $(find sensors_tools_ros)/cfg/rviz.rviz" />
+
+    <node pkg="tf" type="static_transform_publisher" name="cam0_odom_to_camera" args="0 0 0 0 0 0 1 odom camera_link 100" />
+    <node pkg="tf" type="static_transform_publisher" name="cam0_map_to_odom" args="0 0 0 0 0 0 1 map odom 100" />
+</launch>

@@ -11,7 +11,7 @@ class BaseBridgeConfig:
         Base class for bridge configuration
     """
 
-    data_types: List[Literal["image", "depth", "semantic"]]
+    data_types: List[Literal["rgb", "depth", "semantic", "pose"]]
     """
         List of data types that the bridge will provide
         Each bridge can specialize on this
