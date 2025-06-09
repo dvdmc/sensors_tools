@@ -20,24 +20,24 @@ dependencies=[
     "gdown",
     "regex",
     # Trident dependencies (check versions)
-    "fsspec==2023.9.0",
-    "huggingface_hub==0.23.0",
-    "nltk==3.8.1",
-    "opencv_python==4.6.0.66",
-    "openpyxl==3.1.2",
-    "pycocotools==2.0.7",
-    "safetensors==0.4.3",
-    "scipy==1.14.0",
+    "fsspec",
+    "huggingface_hub",
+    "nltk",
+    "opencv_python",
+    "openpyxl",
+    "pycocotools",
+    "safetensors",
+    "scipy",
     "scikit-image",
-    "timm==0.4.12",
+    "timm",
     "transformers==4.37.2",
 ]
 # TODO: Add optional dependency rospkg
-# Indicate in readme: pip3 install torch torchvision torchaudio
+# Indicate in readme: pip install torch torchvision torchaudio
 
 [tool.setuptools]
 packages = ["sensors_tools"]
 
-# black
-[tool.black]
+[tool.ruff]
+indent-width = 2
 line-length = 120

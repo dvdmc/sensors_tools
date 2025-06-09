@@ -8,21 +8,21 @@ from pathlib import Path
 
 from matplotlib import pyplot as plt
 import numpy as np
-from sensor import SensorConfig, SemanticInferenceSensor
+from sensor import SensorConfig, SemanticSegmentationSensor
 from sensors_tools.bridges.test_bridge import TestBridgeConfig
-from sensors_tools.inference.semantic import SemanticInferenceConfig
+from sensors_tools.inference.semantic import ClassicSemanticSegmentationConfig
 
 if __name__ == '__main__':
     # Setup the sensor
     bridge_cfg = TestBridgeConfig(data_types=["rgb", "semantic", "depth", "pose"], dataset_path=Path("./bridges/test_data/dataset/"), width=512, height=512)
-    sem_cfg = SemanticInferenceConfig(model_name = "deeplabv3_resnet50_deterministic", num_classes=21)
+    sem_cfg = ClassicSemanticSegmentationConfig(model_name = "deeplabv3_resnet50", num_classes=21)
     cfg = SensorConfig(
         bridge_cfg = bridge_cfg,
         bridge_type = "test",
         inference_cfg = sem_cfg
     )
 
-    sensor = SemanticInferenceSensor(cfg)
+    sensor = SemanticSegmentationSensor(cfg)
     sensor.setup()
 
     fig, ax = plt.subplots(1,4)

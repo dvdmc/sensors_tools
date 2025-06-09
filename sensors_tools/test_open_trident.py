@@ -1,9 +1,9 @@
 from pathlib import Path
-from matplotlib import pyplot as plt
+import matplotlib.pyplot as plt
 import numpy as np
 
-from sensors_tools.inference.open_trident_semantic import OpenTridentSemanticInference, OpenTridentSemanticInferenceConfig
-from sensor import SensorConfig, SemanticInferenceSensor
+from sensors_tools.inference.open_trident_semantic import OpenTridentSemanticSegmentation, OpenTridentSemanticSegmentationConfig
+from sensor import SensorConfig, SemanticSegmentationSensor
 from sensors_tools.bridges.test_bridge import TestBridgeConfig
 
 if __name__ == '__main__':
@@ -14,9 +14,9 @@ if __name__ == '__main__':
         width=512,
         height=512,
     )
-    sem_cfg = OpenTridentSemanticInferenceConfig(
+    sem_cfg = OpenTridentSemanticSegmentationConfig(
         num_classes=5,
-        model_name="trident_open-seg",
+        model_name="trident",
         labels_name="ade20k",
     )
 
@@ -27,7 +27,7 @@ if __name__ == '__main__':
     )
 
     # Initialize the sensor
-    sensor = SemanticInferenceSensor(cfg)
+    sensor = SemanticSegmentationSensor(cfg)
     sensor.setup()
 
     fig, ax = plt.subplots(1, 4)
@@ -52,7 +52,7 @@ if __name__ == '__main__':
             ax[2].set_title("Semantic GT")
 
             # Perform prediction and display semantic overlay
-            open_inference = OpenTridentSemanticInference(sem_cfg)
+            open_inference = OpenTridentSemanticSegmentation(sem_cfg)
             open_inference.setup()
             pred_data = open_inference.get_prediction(data["rgb"])
             ax[3].imshow(pred_data["img_out"])

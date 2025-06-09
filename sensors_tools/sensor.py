@@ -11,10 +11,9 @@ import torch  # Just for setting the random seed
 
 from sensors_tools.bridges import BridgeConfig, BridgeType, get_bridge
 
-from sensors_tools.inference.semantic import SemanticInferenceConfig
-from sensors_tools.inference.semantic_mcd import SemanticMCDInferenceConfig
-from sensors_tools.inference.open_clip_semantic import OpenClipSemanticInferenceConfig
-from sensors_tools.inference.open_trident_semantic import OpenTridentSemanticInferenceConfig
+from sensors_tools.inference.semantic import ClassicSemanticSegmentationConfig
+from sensors_tools.inference.open_clip_semantic import OpenClipSemanticSegmentationConfig
+from sensors_tools.inference.open_trident_semantic import OpenTridentSemanticSegmentationConfig
 from sensors_tools.inference import get_inference
 from sensors_tools.utils.semantics_utils import apply_label_map, get_label_mapper
 from sensors_tools.utils.random_utils import set_seed
@@ -23,7 +22,7 @@ from sensors_tools.utils.random_utils import set_seed
 @dataclass
 class SensorConfig:
     """
-    Configuration class for DeterministicSensor
+    Configuration class for classicSensor
     """
 
     bridge_cfg: BridgeConfig
@@ -35,8 +34,8 @@ class SensorConfig:
     gt_labels_mapper: Optional[str] = None
     """ Name reference the label map for derived datasets. Example: coco_voc_2_pascal_8 """
 
-    inference_cfg: Optional[Union[SemanticInferenceConfig, SemanticMCDInferenceConfig, OpenClipSemanticInferenceConfig, OpenTridentSemanticInferenceConfig]] = field(
-        default_factory=SemanticInferenceConfig, metadata={"default": SemanticInferenceConfig()}
+    inference_cfg: Optional[Union[ClassicSemanticSegmentationConfig, OpenClipSemanticSegmentationConfig, OpenTridentSemanticSegmentationConfig]] = field(
+        default_factory=ClassicSemanticSegmentationConfig, metadata={"default": ClassicSemanticSegmentationConfig()}
     )
     """ Inference configuration """
 
@@ -46,7 +45,7 @@ class SensorConfig:
     save_inference_path: Optional[Path] = None
     """ Path to save the inference results """
 
-class SemanticInferenceSensor:
+class SemanticSegmentationSensor:
     def __init__(self, cfg: SensorConfig):
         self.cfg = cfg
         self.seq = 0
@@ -58,6 +57,8 @@ class SemanticInferenceSensor:
         print("Setting up the inference model")
         if "semantic" in self.cfg.bridge_cfg.data_types:
             assert self.cfg.inference_cfg is not None, "Inference cfg must be specified if semantic data is requested"
+            # Dump inference_cfg
+            print(self.cfg.inference_cfg)
             self.inference_model = get_inference(self.cfg.inference_cfg)
             self.inference_model.setup()
             if self.cfg.save_inference:
@@ -88,6 +89,9 @@ class SemanticInferenceSensor:
 
         start = time.time()
         data = self.bridge.get_data()
+        if data is None:
+            return None
+        
         print(f"Time to get data: {time.time() - start}")
         img = data["rgb"]
         if "semantic" in self.cfg.bridge_cfg.data_types:
@@ -102,11 +106,6 @@ class SemanticInferenceSensor:
 
             data["semantic"] = out["probs"]
             data["semantic_rgb"] = out["img_out"]
-
-            # TODO: Populate inside the inference_model by providing the "data" to make it more generic
-            if "mcd" in self.cfg.inference_cfg.model_name:
-                data["epistemic_var"] = out["epistemic_var"]
-                data["acc_probs"] = out["acc_probs"]
 
             if self.cfg.save_inference:
                 np.save(self.pred_path / f"{self.seq}.npy", out["probs"])

@@ -151,7 +151,7 @@ class ResNet(nn.Module):
             self.sampling_2 = nn.Dropout(p=0.3, inplace=False)
             self.sampling_3 = nn.Dropout(p=0.3, inplace=False)
             self.sampling_4 = nn.Dropout(p=0.3, inplace=False)
-        elif uncertainty_method == 'Deterministic':
+        elif uncertainty_method == 'classic':
             self.sampling_1 = nn.Identity()
             self.sampling_2 = nn.Identity()
             self.sampling_3 = nn.Identity()

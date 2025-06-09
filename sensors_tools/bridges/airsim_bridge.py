@@ -34,7 +34,7 @@ class AirsimBridgeConfig(BaseBridgeConfig):
     """ Data types to query """
 
     semantic_config: List[List] = field(default_factory=list, metadata={"default": []})
-    """ Semantic configuration """
+    """ Semantic configuration for Airsim. It's a list with name-id pairs"""
 
     width: int = 512
     """ Image width """

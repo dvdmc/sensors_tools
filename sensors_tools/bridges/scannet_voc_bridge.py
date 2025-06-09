@@ -16,10 +16,10 @@ from .base_bridge import BaseBridge, BaseBridgeConfig
 ScanNetSensorDataTypes = Literal["rgb", "depth", "semantic", "pose"]
 """
     List of sensor data to query.
-    - "pose": query poses.
     - "rgb": query rgb images.
     - "depth": query depth images.
     - "semantic": query semantic images.
+    - "pose": query poses.
 """
 
 @dataclass

@@ -1,20 +1,17 @@
 <?xml version="1.0"?>
-<package format="2">
-  <name>sensors_tools_ros</name>
-  <version>0.0.1</version>
-  <description>Sensors tools for conversion and inference</description>
-  <maintainer email="davidmc@unizar.es">David Morilla-Cabello</maintainer>
+<?xml-model
+   href="http://download.ros.org/schema/package_format3.xsd"
+   schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+ <name>sensors_tools_ros</name>
+ <version>0.0.2</version>
+ <description>Sensors tools for conversion and inference</description>
+ <maintainer email="davidmc@unizar.es">David Morilla-Cabello</maintainer>
+ <license>BSD</license>
 
-  <license>BSD</license>
+  <build_depend>ament_python</build_depend>
 
-  <url type="repository">https://github.com/dvdmc/sensors_tools</url>
-
-  <author email="davidmc@unizar.es">David Morilla-Cabello</author>
-
-  <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>message_generation</build_depend>
-  <exec_depend>message_runtime</exec_depend>
-  <depend>rospy</depend>
+  <depend>rclpy</depend>
   <depend>sensor_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>nav_msgs</depend>
@@ -22,5 +19,14 @@
   <depend>std_srvs</depend>
   <depend>cv_bridge</depend>
   <depend>tf_conversions</depend>
+  <depend>sensors_tools_msg</depend>
 
+ <test_depend>ament_copyright</test_depend>
+ <test_depend>ament_flake8</test_depend>
+ <test_depend>ament_pep257</test_depend>
+ <test_depend>python3-pytest</test_depend>
+
+ <export>
+   <build_type>ament_python</build_type>
+ </export>
 </package>

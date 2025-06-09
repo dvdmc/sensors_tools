@@ -1,7 +1,4 @@
-from dataclasses import dataclass, field
-from pathlib import Path
-import time
-from typing import Optional, Tuple
+from dataclasses import dataclass
 from matplotlib import pyplot as plt
 import matplotlib.colors as mcolors
 from einops import rearrange
@@ -13,25 +10,34 @@ from PIL import Image
 from torchvision import transforms
 from torchvision.transforms import CenterCrop, Compose
 
-from sensors_tools.inference.semantic import SemanticInference, SemanticInferenceConfig
+from sensors_tools.inference.semantic import ClassicSemanticSegmentation, ClassicSemanticSegmentationConfig
 from sensors_tools.utils.semantics_utils import get_color_map, label2rgb
 from sensors_tools.inference.models.clip import tokenize # TODO: This should be moved to get_tokenizer interface
 
 from . import get_model
 
 @dataclass
-class OpenClipSemanticInferenceConfig(SemanticInferenceConfig):
+class OpenClipSemanticSegmentationConfig(ClassicSemanticSegmentationConfig):
     """
         Configuration class for the semantic inference
-        default model_name: clip_ViT-L/14@336px_open
     """
+    inference_type: str = "open-sim"
+    """ Inference type """
+
+    model_name: str = "clip"
+    """ Name of the model to be used """
+
+    encoder_name: str = "ViT-L/14@336px"
+    """ Name of the encoder to be used """
+
     classes_text: str = "cables"
     """ Name of the classes to be predicted """
+    
     skip_center_crop: bool = True
     """ Whether to skip center crop """
 
-class OpenClipSemanticInference(SemanticInference):
-    def __init__(self, cfg: OpenClipSemanticInferenceConfig):
+class OpenClipSemanticSegmentation(ClassicSemanticSegmentation):
+    def __init__(self, cfg: OpenClipSemanticSegmentationConfig):
         super().__init__(cfg)
         self.cfg = cfg
         assert self.cfg.num_classes == 2, "Open semantic inference only works with 2 classes"
@@ -104,7 +110,7 @@ class OpenClipSemanticInference(SemanticInference):
 
     def get_prediction(self, img: np.ndarray) -> dict:
         """
-            Get the prediction from the model assuming it is deterministic
+            Get the prediction from the model assuming it is classic
             Args:
                 img: image to be processed
             Returns:
@@ -126,15 +132,15 @@ class OpenClipSemanticInference(SemanticInference):
 
             # Reshape embeddings from flattened patches to patch height and width
             h_in, w_in = img_t.shape[-2:]
-            if "ViT" in self.cfg.model_name:
+            if "ViT" in self.cfg.encoder_name:
                 h_out = h_in // self.model.visual.patch_size
                 w_out = w_in // self.model.visual.patch_size
-            elif "RN" in self.cfg.model_name:
+            elif "RN" in self.cfg.encoder_name:
                 h_out = max(h_in / w_in, 1.0) * self.model.visual.attnpool.spacial_dim
                 w_out = max(w_in / h_in, 1.0) * self.model.visual.attnpool.spacial_dim
                 h_out, w_out = int(h_out), int(w_out)
             else:
-                raise ValueError(f"Unknown CLIP model name: {self.cfg.model_name}")
+                raise ValueError(f"Unknown CLIP model name: {self.cfg.encoder_name}")
             embeddings = rearrange(embeddings, "b (h w) c -> b h w c", h=h_out, w=w_out)
             embeddings /= embeddings.norm(dim=-1, keepdim=True)
             embeddings = embeddings.squeeze(0)
@@ -149,7 +155,7 @@ class OpenClipSemanticInference(SemanticInference):
             probs_2 = torch.cat((1-probs, probs), dim=0)
             probs_np = probs_2.permute(1, 2, 0).cpu().numpy()
             # Get label prediction for visualization
-            pred = torch.argmax(probs_2, dim=0).cpu().numpy()
+            torch.argmax(probs_2, dim=0).cpu().numpy()
 
             norm = mcolors.Normalize(vmin=0.0, vmax=1.0)
             probs_normalized = norm(probs.squeeze().cpu().numpy())  # Normalize probs

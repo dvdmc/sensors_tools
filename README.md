@@ -1,7 +1,7 @@
 # Sensors Tools
 
-This repository offers a generic sensor interface for RGB-D semantic ROS messages.
-It mainly tackles the problem of bridging semantic measurements from simulators, datasets, other ROS frameworks.
+This repository offers a generic sensor interface for RGB-D semantic ROS 2 messages.
+It mainly tackles the problem of bridging semantic measurements from simulators, datasets, other ROS 2 frameworks.
 
 <p float="center" align="middle">
   <img src="media/rgb.png" width="20%" hspace="20"/>
@@ -22,7 +22,7 @@ Then, you can install the required dependencies and the python package with:
 ```
 pip install . (use -e for installing an editable version in case you want to modify / debug)
 ```
-**If you want to use Trident:** Install mmcv 2.1.0 following their [installation guide](https://mmcv.readthedocs.io/en/latest/get_started/installation.html). This version is currently required by [mmsegmentation](https://github.com/open-mmlab/mmsegmentation). The installation of [mmcv](https://mmcv.readthedocs.io/en/latest/get_started/introduction.html) and [Pytorch](https://pytorch.org/get-started/locally/) depends on your CUDA version. It is recommended to install a torch version which allows to install pre-built mmcv binaries. You can check the compatibility in this [section](https://github.com/open-mmlab/mmsegmentation). Then install mmsegmentation and mmengine.
+**If you want to use Trident:** We removed the dependency on mmsegmentation so only the inference with pre-trained weights will work.
 
 ## Structure
 - `sensors_tools/`:

@@ -235,21 +235,7 @@ def deeplabv3_resnet50(num_classes=21, output_stride=8, pretrained_backbone=True
     return _segm_resnet('deeplabv3', 'resnet50', num_classes, 
                         output_stride=output_stride, 
                         pretrained_backbone=pretrained_backbone, 
-                        uncertainty_method='Deterministic')
-
-def deeplabv3_resnet50_MCD(num_classes=21, output_stride=8, pretrained_backbone=True):
-    """Constructs a DeepLabV3 model with a ResNet-50 backbone.
-
-    Args:
-        num_classes (int): number of classes.
-        output_stride (int): output stride for deeplab.
-        pretrained_backbone (bool): If True, use the pretrained backbone.
-    """
-    model = _segm_resnet('deeplabv3', 'resnet50', num_classes, 
-                         output_stride=output_stride, 
-                         pretrained_backbone=pretrained_backbone, 
-                         uncertainty_method='MCD')
-    return model
+                        uncertainty_method='classic')
 
 def deeplabv3plus_resnet50(num_classes=21, output_stride=8, pretrained_backbone=True):
     """Constructs a DeepLabV3 model with a ResNet-50 backbone.
@@ -262,26 +248,11 @@ def deeplabv3plus_resnet50(num_classes=21, output_stride=8, pretrained_backbone=
     return _segm_resnet('deeplabv3plus', 'resnet50', num_classes, 
                        output_stride=output_stride, 
                        pretrained_backbone=pretrained_backbone,
-                       uncertainty_method='Deterministic')
-    
-
-def deeplabv3plus_resnet50_MCD(num_classes=21, output_stride=8, pretrained_backbone=True):
-    """Constructs a DeepLabV3 model with a ResNet-50 backbone.
-
-    Args:
-        num_classes (int): number of classes.
-        output_stride (int): output stride for deeplab.
-        pretrained_backbone (bool): If True, use the pretrained backbone.
-    """
-    return _segm_resnet('deeplabv3plus', 'resnet50', num_classes, 
-                       output_stride=output_stride, 
-                       pretrained_backbone=pretrained_backbone,
-                       uncertainty_method='MCD')
-
+                       uncertainty_method='classic')
 
 if __name__ == "__main__":
     return_layers = {'layer4': 'out', 'layer1': 'low_level'}
-    model = deeplabv3plus_resnet50_MCD()
+    model = deeplabv3plus_resnet50()
     for key in model.state_dict():
         print(key, model.state_dict()[key].size())
     model.eval()

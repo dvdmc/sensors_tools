@@ -13,27 +13,38 @@ from PIL import Image
 from torchvision import transforms
 from torchvision.transforms import CenterCrop, Compose
 
-from sensors_tools.inference.semantic import SemanticInference, SemanticInferenceConfig
+from sensors_tools.inference.semantic import ClassicSemanticSegmentation, ClassicSemanticSegmentationConfig
 from sensors_tools.utils.semantics_utils import get_color_map, label2rgb
 
 from . import get_model
 
+# TODO: We have to fix the available inference configs
+
 @dataclass
-class OpenTridentSemanticInferenceConfig(SemanticInferenceConfig):
+class OpenTridentSemanticSegmentationConfig(ClassicSemanticSegmentationConfig):
     """
         Configuration class for the semantic inference
     """
+    inference_type: str = "open-seg"
+    """ Type of inference."""
+
     class_names: str = "sheep,human,grass,sky,house"
     """ Name of the classes to be predicted. Classes must be separated with comma and subclasses must be separated with ; """
-    sam_checkpoint: Path = Path("/home/david/git/Trident/sam_vit_b_01ec64.pth")
+
+    encoder_name: str = "trident"
+    """ Name of the encoder """
+    
+    sam_checkpoint_path: str = "/home/david/git/Trident/sam_vit_b_01ec64.pth"
     """ Path to the SAM checkpoint """
+
     sam_model_type: str = "vit_b"
     """ Type of the SAM model """
+
     coarse_threshold: float = 0.2
     """ Threshold for the SAM refinement """
 
-class OpenTridentSemanticInference(SemanticInference):
-    def __init__(self, cfg: OpenTridentSemanticInferenceConfig):
+class OpenTridentSemanticSegmentation(ClassicSemanticSegmentation):
+    def __init__(self, cfg: OpenTridentSemanticSegmentationConfig):
         super().__init__(cfg)
         self.cfg = cfg
         # assert self.cfg.labels_name == "ade20k", "Open trident semantic inference works for many classes, use ade20k map for now." # TODO: Use generic color map
@@ -67,7 +78,7 @@ class OpenTridentSemanticInference(SemanticInference):
         # r[self.pred_class_prob < 0.5] = 0
         r = Image.fromarray(r)
         # Convert the image to RGBA for merging with RGB image
-        r = r.convert('RGBA').resize((self.cfg.width, self.cfg.height), resample=Image.Resampling.NEAREST)
+        r = r.convert('RGBA')
         datas = r.getdata() # This returns an internal PIL sequence data type. We ignore its type below
         newData = []
         for item in datas: # type: ignore
@@ -78,7 +89,7 @@ class OpenTridentSemanticInference(SemanticInference):
         r.putdata(newData)
 
         # Merge predicted color image with RGB image
-        input_alpha_image = Image.fromarray(img).convert('RGBA').resize((self.cfg.width, self.cfg.height))
+        input_alpha_image = Image.fromarray(img).convert('RGBA')
         img_out = Image.alpha_composite(input_alpha_image, r).convert("RGB")
         img_out = np.array(img_out)
 
@@ -86,13 +97,15 @@ class OpenTridentSemanticInference(SemanticInference):
 
     def get_prediction(self, img: np.ndarray) -> dict:
         """
-            Get the prediction from the model assuming it is deterministic
+            Get the prediction from the model assuming it is classic
             Args:
                 img: image to be processed
             Returns:
                 out: dictionary with the outputs. For this inference model: probs, img_out
         """
-        recover_size = transforms.Resize((self.cfg.height, self.cfg.width), interpolation=transforms.InterpolationMode.NEAREST)
+        prev_height = img.shape[0]
+        prev_width = img.shape[1]
+        recover_size = transforms.Resize((prev_height, prev_width), interpolation=transforms.InterpolationMode.NEAREST)
         # We force below to be a tensor
         img_pil = Image.fromarray(img) # Preprocess assumes a PIL image
         img_t: torch.Tensor = self.preprocess(img_pil) # type: ignore
@@ -105,22 +118,19 @@ class OpenTridentSemanticInference(SemanticInference):
             pred, logits = self.model.predict(img_pil, img_t)
             seg_probs = self.softmax(logits)
 
-            probs_np = seg_probs.permute(1, 2, 0).cpu().numpy()
+            probs = recover_size(seg_probs)
+            probs_np = probs.permute(1, 2, 0).cpu().numpy()
 
-            # Get label prediction for visualization
-            pred = pred.permute(1, 2, 0).cpu().numpy()[:,:,0]
-
-            # Get the probability of the predicted label
-            # pred_probs = probs_np[np.arange(probs_np.shape[0])[:, None],
-            #                     np.arange(probs_np.shape[1])[None, :],
-            #                     pred.astype(int)]  # Shape: [h, w]
+            # NOTE: Trident outputs a uniform dist for some classes. In those cases we want to select 0 as the argmax
+            # Compute max and second max probabilities to check similarity. We reduce decimals to avoid numerical errors
+            probs_np = np.round(probs_np, decimals=5)
+            probs_np = probs_np / np.sum(probs_np, axis=-1, keepdims=True)
+            pred = np.argmax(probs_np, axis=-1)
             
-            # cmap = plt.get_cmap("turbo")
-            # img_out = cmap(pred_probs)  # Apply colormap
-            # img_out = (img_out[:, :, :3] * 255).astype(np.uint8)  # Drop alpha channel and convert to uint8
-
             img_out = self.overlay_label_rgb(pred, img)
 
+            print(f"Shapes: {pred.shape}, {probs_np.shape}, {img_out.shape}")
+            print(f"Values: {np.unique(probs_np)}")
             out = {'probs': probs_np, 'img_out': img_out}
 
             return out

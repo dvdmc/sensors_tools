@@ -5,40 +5,33 @@ import sys
 
 sys.path.append("..")
 
-from .prompts.imagenet_template import openai_imagenet_template, sub_imagenet_template
-
-from mmseg.models.segmentors import BaseSegmentor
-from mmseg.models.data_preprocessor import SegDataPreProcessor
-from mmengine.structures import PixelData
-
-from mmseg.registry import MODELS
+from .prompts.imagenet_template import openai_imagenet_template
 
 from torchvision import transforms
 import torch.nn.functional as F
 
 from .open_clip import create_model, tokenizer
-from .segment_anything import sam_model_registry, SamPredictor
+from .segment_anything.build_sam import sam_model_registry
+from .segment_anything.predictor import SamPredictor
 from .myutils import UnNormalize
 from .seg_utils.utils import sam_refinement, preprocess_image
 
 import cv2
 from .pamr import PAMR
-import os
 
-@MODELS.register_module()
-class Trident(BaseSegmentor):
+class Trident(nn.Module):
     def __init__(self, clip_type, clip_model_type, vfm_model, class_names, device=torch.device('cuda'),
                  prob_thd=0.0, logit_scale=40, beta=1.2, gamma=3.0, slide_stride=112, slide_crop=336, debug = False,
                  sam_refinement=False, sam_model_type='vit_b', pamr_steps=0, pamr_stride=(8, 16),
                  sam_ckpt='/home/yuheng/project/trident-pure/exclude/sam_vit_b_01ec64.pth',
                  coarse_thresh=0.10, minimal_area=225,sam_mask_coff=0.005, **kwargs):
 
-        data_preprocessor = SegDataPreProcessor(
-            mean=[122.771, 116.746, 104.094],
-            std=[68.501, 66.632, 70.323],
-            bgr_to_rgb=True
-        )
-        super().__init__(data_preprocessor=data_preprocessor)
+        super(Trident, self).__init__()
+        self.data_preprocessor = transforms.Compose([
+                        transforms.ToTensor(),
+                        transforms.Normalize(mean=[122.771, 116.746, 104.094],
+                         std=[68.501, 66.632, 70.323])
+        ])
 
         self.clip = create_model(clip_model_type, pretrained=clip_type, precision='fp16')
         self.clip.eval().to(device)
@@ -136,8 +129,10 @@ class Trident(BaseSegmentor):
         img_np = np.array(img_pil)
         img_cv2 = cv2.cvtColor(img_np, cv2.COLOR_BGR2RGB)
         tmp_h, tmp_w = img_cv2.shape[:2]
-        if tmp_h % stride != 0: tmp_h = (tmp_h // stride + 1) * stride
-        if tmp_w % stride != 0: tmp_w = (tmp_w // stride + 1) * stride
+        if tmp_h % stride != 0: 
+            tmp_h = (tmp_h // stride + 1) * stride
+        if tmp_w % stride != 0: 
+            tmp_w = (tmp_w // stride + 1) * stride
         img_cv2 = cv2.resize(img_cv2, (tmp_w, tmp_h))
         if self.dataset_type == 'CityscapesDataset':
             #special cases for cityscapes
@@ -150,7 +145,8 @@ class Trident(BaseSegmentor):
             sam_v = [sam_v_1, sam_v_2]
             sam_valid_w = sam_valid_w_1 * 2
             sam_valid_h = sam_valid_h_1
-            if self.sam_refine: self.sam_predictor.set_image(img_cv2)
+            if self.sam_refine: 
+                self.sam_predictor.set_image(img_cv2)
         else:
             sam_enc_feats, sam_attn, sam_v, sam_valid_h, sam_valid_w = self.get_sam_feat(img_cv2, 16)
 
@@ -171,7 +167,8 @@ class Trident(BaseSegmentor):
                 hook_fn_forward_qkv)
         # Forward pass in the model
         patch_size = self.vfm.patch_embed.patch_size
-        if type(patch_size) is tuple: patch_size = patch_size[0]
+        if type(patch_size) is tuple: 
+            patch_size = patch_size[0]
         feat = self.vfm.get_intermediate_layers(imgs_norm)[0]
         nb_im = feat.shape[0]  # Batch size
         vfm_h, vfm_w = imgs_norm[0].shape[-2] // patch_size, imgs_norm[0].shape[-1] // patch_size
@@ -190,11 +187,11 @@ class Trident(BaseSegmentor):
 
     def get_windowed_imgs(self, img, patch_size=16):
         stride, crop_size = self.slide_stride, self.slide_crop
-        if type(img) == list:
+        if type(img) is list:
             img = img[0].unsqueeze(0)
-        if type(stride) == int:
+        if type(stride) is int:
             stride = (stride, stride)
-        if type(crop_size) == int:
+        if type(crop_size) is int:
             crop_size = (crop_size, crop_size)
 
         h_stride, w_stride = stride
