@@ -12,9 +12,9 @@ from torchvision.models.segmentation import (
 )
 from torchvision import transforms
 
-from semantic_segmentation_base import SemanticSegmentationBase, SemanticSegmentationBaseConfig
-from semantic_types import SemanticFeatureType, SemanticSegmentationMethods
-from semantic_utils import SemanticDatasetType, get_labels_color_map, labels_to_image
+from .semantic_segmentation_base import SemanticSegmentationBase, SemanticSegmentationBaseConfig
+from .semantic_types import SemanticFeatureType
+from .semantic_utils import SemanticDatasetType, get_labels_color_map, labels_to_image
 
 @dataclass
 class SemanticSegmentationDeepLabV3Config(SemanticSegmentationBaseConfig):
@@ -151,3 +151,10 @@ class SemanticSegmentationDeepLabV3(SemanticSegmentationBase):
             return labels_to_image(
                 np.argmax(semantics, axis=-1), self.semantics_color_map, bgr=bgr
             )
+
+    def get_semantic_dimensions(self):
+        if self.semantic_feature_type == "label":
+            return 1
+        elif self.semantic_feature_type == "probability_vector":
+            return self.semantics_color_map.shape[0]
+        

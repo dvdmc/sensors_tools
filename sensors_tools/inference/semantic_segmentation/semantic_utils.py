@@ -3,7 +3,7 @@ from typing import Literal
 import numpy as np
 import cv2
 
-from sensors_tools.sensors_tools.inference.semantic_segmentation.semantic_types import SemanticDatasetType
+from .semantic_types import SemanticDatasetType
 
 from .semantic_labels import get_ade20k_color_map, get_cityscapes_color_map, get_nyu40_color_map, get_voc_color_map, get_generic_color_map
 from .semantic_labels import get_ade20k_labels, get_cityscapes_labels, get_nyu40_labels, get_voc_labels

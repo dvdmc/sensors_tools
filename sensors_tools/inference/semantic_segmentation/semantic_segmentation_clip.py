@@ -11,9 +11,9 @@ from torchvision.transforms import CenterCrop, Compose
 from f3rm.features.clip import clip as f3rm_clip
 from f3rm.features.clip import tokenize
 
-from semantic_segmentation_base import SemanticSegmentationBase, SemanticSegmentationBaseConfig
-from semantic_types import SemanticFeatureType
-from semantic_utils import (
+from .semantic_segmentation_base import SemanticSegmentationBase, SemanticSegmentationBaseConfig
+from .semantic_types import SemanticFeatureType
+from .semantic_utils import (
     SemanticDatasetType,
     similarity_heatmap_image,
     get_labels_color_map,
@@ -35,7 +35,7 @@ class SemanticSegmentationCLIPConfig(SemanticSegmentationBaseConfig):
     semantic_feature_type: SemanticFeatureType = "probability_vector"
     """ Semantic feature type """
     
-    model_path: str = ""
+    model_path: Optional[str] = None
     """ Path to the CLIP model to use """
 
     sim_text_query: str = "clock"
@@ -157,7 +157,7 @@ class SemanticSegmentationCLIP(SemanticSegmentationBase):
                 f"Segformer does not support {encoder_name} model with size {image_size} and dataset {semantic_dataset_type}"
             )
 
-        if model_path == "":  # Load pre-trained models
+        if model_path is None:  # Load pre-trained models
             model, preprocess = f3rm_clip.load(encoder_name, device)
         else:
             raise NotImplementedError(
@@ -328,3 +328,11 @@ class SemanticSegmentationCLIP(SemanticSegmentationBase):
         sims = semantics @ self.text_embs.T  # (H, W, D) @ (D, N) -> (H, W, N)
         pred = sims.argmax(dim=-1)
         return pred.cpu().detach().numpy()
+
+    def get_semantic_dimensions(self):
+        if self.semantic_feature_type == "label":
+            return 1
+        elif self.semantic_feature_type == "probability_vector":
+            return self.semantics_color_map.shape[0]
+        elif self.semantic_feature_type == "feature_vector":
+            return self.text_embs.shape[0]

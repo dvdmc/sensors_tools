@@ -21,7 +21,10 @@ from poses_tools.frame_converter import FrameConverter
 
 from sensors_tools.sensor import SemanticSegmentationSensor, SensorConfig
 from sensors_tools.bridges import ControllableBridges, BridgeType, get_bridge_config
-from sensors_tools.inference.semantic_segmentation import get_semantic_segmentation_config
+from sensors_tools.inference.semantic_segmentation.semantic_types import SemanticSegmentationMethods
+from sensors_tools.inference.semantic_segmentation import (
+    get_semantic_segmentation_config,
+)
 
 from sensors_tools_msgs.srv import MoveSensor
 
@@ -133,12 +136,18 @@ class SemanticNode(Node):
         if bridge_type == "ros":
             bridge_cfg.node = self
 
-        semantic_segmentation_method_param = self.declare_parameter("semantic_segmentation_method", "classic")
-        semantic_segmentation_method: str = semantic_segmentation_method_param.get_parameter_value().string_value
+        semantic_segmentation_type_param = self.declare_parameter(
+            "semantic_segmentation_type", "segformer"
+        )
+        semantic_segmentation_type: SemanticSegmentationMethods = (
+            semantic_segmentation_type_param.get_parameter_value().string_value
+        )
 
-        print(f"Semantic segmentation type: {semantic_segmentation_method}")
+        print(f"Semantic segmentation type: {semantic_segmentation_type}")
 
-        inference_config_class = get_semantic_segmentation_config(semantic_segmentation_method)
+        inference_config_class = get_semantic_segmentation_config(
+            semantic_segmentation_type
+        )
         inference_parameters = self.load_rosparams(inference_config_class, "inference")
         inference_cfg = inference_config_class(**inference_parameters)
 
@@ -162,10 +171,11 @@ class SemanticNode(Node):
             bridge_type=bridge_type,
             bridge_cfg=bridge_cfg,
             inference_cfg=inference_cfg,
+            inference_type=semantic_segmentation_type,
             save_inference=save_inference,
             save_inference_path=save_inference_path,
         )
-        
+
         print(f"Loaded Sensor")
 
         if "depth" in self.cfg.bridge_cfg.data_types:
@@ -216,12 +226,15 @@ class SemanticNode(Node):
             param_name = f"{namespace}.{field_name}" if namespace else field_name
 
             if isinstance(field.default, dataclasses._MISSING_TYPE):
+                print(f"Getting default value withOUT type: {type(field.metadata)}")
                 default_value = field.metadata.get("default")
             else:
+                print(f"Getting default value with type: {type(field.default)}")
                 default_value = field.default
 
             param = self.declare_parameter(param_name, default_value)
             param_value = param.value
+            print(f"Param value: {param_value}")
 
             # Convert to Path if field name contains 'path'
             if "path" in field_name and param_value is not None:
@@ -305,7 +318,11 @@ class SemanticNode(Node):
             np.linspace(0, H - 1, num=int(H / self.stride)),
         )  # type: ignore
         point_depth = depth_np[:: self.stride, :: self.stride]
-        depth_mask = (point_depth > 0) & (point_depth < self.max_range) if self.max_range != -1.0 else (point_depth > 0)
+        depth_mask = (
+            (point_depth > 0) & (point_depth < self.max_range)
+            if self.max_range != -1.0
+            else (point_depth > 0)
+        )
 
         y = (
             -(columns - self.depth_camera_info.cx)
@@ -319,9 +336,9 @@ class SemanticNode(Node):
         )  # Originally y : Now -z
         x = point_depth  # Originally z : Now x
         pcd = np.dstack((x, y, z)).astype(np.float32)
-        
-        pcd[~depth_mask] = 0 
-        
+
+        pcd[~depth_mask] = 0
+
         colors = rgb_np[:: self.stride, :: self.stride, :]
         colors = colors.astype(np.uint8)
         # We have to create a new np.array to swap channels and use the view function later
@@ -346,11 +363,11 @@ class SemanticNode(Node):
         the freespace information
         """
         depth_np = depth
-        
+
         if self.max_range == -1.0:
             # Return an empty point cloud
             return PointCloud2()
-        
+
         # Threshold the depth image
         depth_np[depth_np > self.max_range] = self.max_range
         W = depth_np.shape[1]
@@ -461,7 +478,7 @@ class SemanticNode(Node):
         # print(f"Semantic values: {semantic}")
         point_cloud_msg.width = points_pcd.shape[0] * points_pcd.shape[1]
 
-        sent_n_classes = self.cfg.inference_cfg.num_classes  # type: ignore
+        sent_n_classes = self.sensor.inference_model.get_semantic_dimensions()  # type: ignore
 
         # The PointField is defined with a name, the starting byte offset, the data type and number of elements.
         # rgb is encoded in the standard way so RViz can visualize it. It will be transformed to float32 with view
@@ -505,10 +522,16 @@ class SemanticNode(Node):
     def check_camera_info(self):
         if self.camera_info and self.depth_camera_info:
             return True
-        
+
         if self.cfg.bridge_type != "ros":
-            self.camera_info = self.sensor.bridge.camera_info if "rgb" in self.data_types else None
-            self.depth_camera_info = self.sensor.bridge.depth_camera_info if "depth" in self.data_types else None
+            self.camera_info = (
+                self.sensor.bridge.camera_info if "rgb" in self.data_types else None
+            )
+            self.depth_camera_info = (
+                self.sensor.bridge.depth_camera_info
+                if "depth" in self.data_types
+                else None
+            )
         else:
             if "rgb" in self.data_types:
                 if self.sensor.bridge.has_camera_info:
@@ -528,14 +551,13 @@ class SemanticNode(Node):
                     return False
 
         return True
-            
 
     def loop(self):
         """
         Loop that captures data and publishes it
         """
         self.check_camera_info()
-        
+
         # Get data TODO: The ready or not ready should be in the sensor itself with the bridge and inference info
         data = self.sensor.get_data()
         if data is None:
@@ -543,11 +565,11 @@ class SemanticNode(Node):
             return
         else:
             self.get_logger().info("Got data!")
-        
+
         if self.sensor.cfg.bridge_type == "ros":
-          timestamp = data["timestamp"]
+            timestamp = data["timestamp"]
         else:
-          timestamp = self.get_clock().now().to_msg()
+            timestamp = self.get_clock().now().to_msg()
 
         # Publish data
         if "pose" in self.data_types:
@@ -613,8 +635,6 @@ class SemanticNode(Node):
                 )
                 self.pub_point_cloud.publish(pcd_msg)
                 # print("Send point cloud with: ", pcd_msg.width, " points")
-
-        pass
 
     def move_to_pose_srv(self, req: MoveSensor.Request) -> MoveSensor.Response:
         """

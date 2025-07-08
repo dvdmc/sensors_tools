@@ -1,17 +1,18 @@
 from dataclasses import dataclass
+from typing import Optional
 import numpy as np
 import torch
 from transformers import AutoImageProcessor, SegformerForSemanticSegmentation
 from PIL import Image
 from torchvision import transforms
 
-from semantic_labels import get_ade20k_to_scannet40_map
-from semantic_segmentation_base import (
+from .semantic_labels import get_ade20k_to_scannet40_map
+from .semantic_segmentation_base import (
     SemanticSegmentationBase,
     SemanticSegmentationBaseConfig,
 )
-from semantic_types import SemanticFeatureType
-from semantic_utils import (
+from .semantic_types import SemanticFeatureType
+from .semantic_utils import (
     SemanticDatasetType,
     get_labels_color_map,
     labels_to_image,
@@ -36,7 +37,7 @@ class SemanticSegmentationSegformerConfig(SemanticSegmentationBaseConfig):
     semantic_feature_type: SemanticFeatureType = "probability_vector"
     """ Semantic feature type: label, probability_vector, feature_vector """
 
-    model_path: str = ""
+    model_path: Optional[str] = None
     """ Path to the model weights """
 
     # label_mapping = None Not implemented yet
@@ -88,6 +89,8 @@ class SemanticSegmentationSegformer(SemanticSegmentationBase):
             self.cfg.model_path,
         )
 
+        print(f"Config: {self.cfg}")
+
         self.semantics_color_map = get_labels_color_map(self.cfg.semantic_dataset_type)
 
         self.semantic_dataset_type = self.cfg.semantic_dataset_type
@@ -125,17 +128,17 @@ class SemanticSegmentationSegformer(SemanticSegmentationBase):
             )
 
         # Convert dataset type to appropiate form
-        dataset = friendly_dataset_type.name.lower()
+        dataset = friendly_dataset_type.lower()
         if dataset == "ade20k":
             dataset = "ade"
 
-        if model_path == "":  # Load pre-trained models
+        if model_path is None:  # Load pre-trained models
             model = SegformerForSemanticSegmentation.from_pretrained(
                 f"nvidia/segformer-{model_variant}-finetuned-{dataset}-{image_size[0]}-{image_size[1]}"
             )
         else:
             raise NotImplementedError(
-                "Segformer only supports pre-trained model for now"
+                f"Segformer only supports pre-trained model for now. You tried to load a custom model: {model_path}"
             )  # TODO(dvdmc): allow to load a custom model
         model = model.to(device).eval()
         transform = AutoImageProcessor.from_pretrained(
@@ -223,3 +226,9 @@ class SemanticSegmentationSegformer(SemanticSegmentationBase):
             return labels_to_image(
                 np.argmax(semantics, axis=-1), self.semantics_color_map, bgr=bgr
             )
+
+    def get_semantic_dimensions(self):
+        if self.semantic_feature_type == "label":
+            return 1
+        elif self.semantic_feature_type == "probability_vector":
+            return self.semantics_color_map.shape[0]

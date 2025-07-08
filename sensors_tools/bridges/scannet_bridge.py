@@ -39,6 +39,8 @@ class ScanNetBridgeConfig(BaseBridgeConfig):
     downsampling_factor_dataset: int = 2
     """ Downsampling factor for the dataset. Or how many images are there in between images. """
 
+    automove: bool = True
+    """ Whether to automatically move to the next frame. """
 
 class ScanNetBridge(BaseBridge):
     """
@@ -203,6 +205,9 @@ class ScanNetBridge(BaseBridge):
 
         data.update(img_data)
 
+        if self.cfg.automove:
+            self.move()
+            
         return data
 
     def get_pose(self) -> Tuple[np.ndarray, Rotation]:

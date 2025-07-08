@@ -13,6 +13,8 @@ from sensors_tools.inference.semantic_segmentation import InferenceConfig
 from sensors_tools.inference.semantic_segmentation import get_semantic_segmentation
 from sensors_tools.utils.random_utils import set_seed
 
+from sensors_tools.inference.semantic_segmentation.semantic_types import SemanticSegmentationMethods
+
 
 @dataclass
 class SensorConfig:
@@ -32,6 +34,9 @@ class SensorConfig:
 
     inference_cfg: Optional[InferenceConfig] = None
     """ Inference configuration """
+
+    inference_type: SemanticSegmentationMethods = None
+    """ Type of inference to be used """
 
     save_inference: bool = False
     """ Whether to save the inference results """
@@ -53,7 +58,7 @@ class SemanticSegmentationSensor:
             assert self.cfg.inference_cfg is not None, "Inference cfg must be specified if semantic data is requested"
             # Dump inference_cfg
             print(self.cfg.inference_cfg)
-            self.inference_model = get_semantic_segmentation(self.cfg.inference_cfg)
+            self.inference_model = get_semantic_segmentation(self.cfg.inference_type, self.cfg.inference_cfg)
 
             if self.cfg.save_inference:
                 assert (

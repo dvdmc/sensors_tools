@@ -8,12 +8,12 @@ from torchvision import transforms
 from sensors_tools.inference.models.trident.trident import Trident
 
 
-from semantic_segmentation_base import (
+from .semantic_segmentation_base import (
     SemanticSegmentationBase,
     SemanticSegmentationBaseConfig,
 )
-from semantic_types import SemanticFeatureType
-from semantic_utils import (
+from .semantic_types import SemanticFeatureType
+from .semantic_utils import (
     SemanticDatasetType,
     get_labels_color_map,
     get_labels_name,
@@ -187,3 +187,9 @@ class SemanticSegmentationTrident(SemanticSegmentationBase):
             return labels_to_image(
                 np.argmax(semantics, axis=-1), self.semantics_color_map, bgr=bgr
             )
+        
+    def get_semantic_dimensions(self):
+        if self.semantic_feature_type == "label":
+            return 1
+        elif self.semantic_feature_type == "probability_vector":
+            return self.semantics_color_map.shape[0]

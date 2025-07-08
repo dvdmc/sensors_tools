@@ -13,23 +13,22 @@
     # Config for bridge is in sensors_tools/bridge/{bridge_type}.py
     bridge:
       bridge_type: 'scannet' # Source of the sensor. It can be 'airsim' or 'ros'
+      automove: true
       data_types: ['rgb', 'depth', 'semantic', 'pose'] # Data types to be published. It can be 'rgb', 'depth', 'semantic', 'pose'
       origin_tf: "map"
       poses_tf: "camera_link"
       dataset_path: '/home/david/datasets/scannet/scans/scene0568_00'
 
 
-    # Config for inference is in sensors_tools/inference/{inference_type}.py
-    inference_type: 'classic'
+    # Config for inference is in sensors_tools/inference/{semantic_segmentation_type}.py
+    semantic_segmentation_type: 'segformer'
     inference:
-      model_name: "segformer"
-      num_classes: 150
-      labels_name: "ade20k"
+      semantic_dataset_type: "ade20k"
       # class_names: "none,floor,bycicle,cables"
 
       # Colors for reference: black, gray, pink-red, clear blue, brown, 
 
-    # inference_type: 'classic'
+    # semantic_segmentation_type: 'classic'
     # inference:
     #   model_name: "deeplabv3" # Type of inference. It can be 'classic' or 'mcd'
     #   encoder_name: "resnet50"
