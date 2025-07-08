@@ -21,8 +21,7 @@ from poses_tools.frame_converter import FrameConverter
 
 from sensors_tools.sensor import SemanticSegmentationSensor, SensorConfig
 from sensors_tools.bridges import ControllableBridges, BridgeType, get_bridge_config
-from sensors_tools.inference import get_inference_config
-from sensors_tools.utils.semantics_utils import label2rgb
+from sensors_tools.inference.semantic_segmentation import get_semantic_segmentation_config
 
 from sensors_tools_msgs.srv import MoveSensor
 
@@ -134,17 +133,18 @@ class SemanticNode(Node):
         if bridge_type == "ros":
             bridge_cfg.node = self
 
-        inference_type_param = self.declare_parameter("inference_type", "classic")
-        inference_type: str = inference_type_param.get_parameter_value().string_value
+        semantic_segmentation_method_param = self.declare_parameter("semantic_segmentation_method", "classic")
+        semantic_segmentation_method: str = semantic_segmentation_method_param.get_parameter_value().string_value
 
-        print(f"Inference type: {inference_type}")
+        print(f"Semantic segmentation type: {semantic_segmentation_method}")
 
-        inference_config_class = get_inference_config(inference_type)
+        inference_config_class = get_semantic_segmentation_config(semantic_segmentation_method)
         inference_parameters = self.load_rosparams(inference_config_class, "inference")
         inference_cfg = inference_config_class(**inference_parameters)
 
-        gt_label_mapper_param = self.declare_parameter("gt_labels_mapper", None)
-        gt_label_mapper = gt_label_mapper_param.value
+        # TODO: This should be managed by the bridge
+        # gt_label_mapper_param = self.declare_parameter("gt_labels_mapper", None)
+        # gt_label_mapper = gt_label_mapper_param.value
 
         save_inference_param = self.declare_parameter("save_inference", False)
         save_inference: bool = save_inference_param.get_parameter_value().bool_value
@@ -164,8 +164,8 @@ class SemanticNode(Node):
             inference_cfg=inference_cfg,
             save_inference=save_inference,
             save_inference_path=save_inference_path,
-            gt_labels_mapper=gt_label_mapper,
-        )  # type: ignore TODO: Solve
+        )
+        
         print(f"Loaded Sensor")
 
         if "depth" in self.cfg.bridge_cfg.data_types:
@@ -569,8 +569,8 @@ class SemanticNode(Node):
 
         if "semantic" in self.data_types:
             try:
-                semantic_gt_img = label2rgb(
-                    data["semantic_gt"], self.sensor.inference_model.color_map
+                semantic_gt_img = self.sensor.inference_model.to_rgb(
+                    data["semantic_gt"], feature_type="label"
                 )
                 semantic_gt_msg = CvBridge().cv2_to_imgmsg(semantic_gt_img, "rgb8")
                 self.pub_semantic_gt.publish(semantic_gt_msg)

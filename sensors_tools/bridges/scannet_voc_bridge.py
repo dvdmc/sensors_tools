@@ -114,7 +114,7 @@ class ScanNetVOCBridge(BaseBridge):
         self.fy_color = self.fy_color*ratio_height
         self.camera_info = CameraData(cx=self.cx_color, cy=self.cy_color, fx=self.fx_color, fy=self.fy_color, width=self.width_color, height=self.height_color) 
         print("CAMERA INFO: ", self.camera_info)
-        self.camera_info_depth = CameraData(cx=self.cx_depth, cy=self.cy_depth, fx=self.fx_depth, fy=self.fy_depth, width=self.width_depth, height=self.height_depth)
+        self.depth_camera_info = CameraData(cx=self.cx_depth, cy=self.cy_depth, fx=self.fx_depth, fy=self.fy_depth, width=self.width_depth, height=self.height_depth)
         #######################################################
     
         # Init pose
@@ -138,7 +138,7 @@ class ScanNetVOCBridge(BaseBridge):
             img_path = self.cfg.dataset_path / "color" / f"{self.seq_n}.jpg"
             # Open image as a np array
             img = (Image.open(img_path)).convert('RGB')
-            img = img.resize((self.camera_info_depth.width, self.camera_info_depth.height)) #Resize to match the depth image
+            img = img.resize((self.depth_camera_info.width, self.depth_camera_info.height)) #Resize to match the depth image
             # img = img.crop((80, 0, 560, 480)) #Crop the image to match the depth image
             data["rgb"] = np.array(img)
         
@@ -147,7 +147,7 @@ class ScanNetVOCBridge(BaseBridge):
             label_path = self.cfg.dataset_path / "label" / f"{self.seq_n}.png"
             label = np.array(Image.open(label_path))
             label[np.where(label == 255)] = 0 #Remove the white contour
-            label = cv2.resize(label, (self.camera_info_depth.width, self.camera_info_depth.height), interpolation = cv2.INTER_NEAREST)
+            label = cv2.resize(label, (self.depth_camera_info.width, self.depth_camera_info.height), interpolation = cv2.INTER_NEAREST)
             # label = label[:, 80:560]
             data["semantic_gt"] = label
 

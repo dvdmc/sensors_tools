@@ -30,19 +30,19 @@ class ScanNetBridgeConfig(BaseBridgeConfig):
     data_types: List[ScanNetSensorDataTypes] = field(default_factory=list, metadata={"default": ["rgb", "poses"]})
     """ Data types to query """
 
-    dataset_path: Path = Path("/media/david/dataset/ScanNet")
+    dataset_path: str = "/home/david/datasets/scannet"
     """ Path to the dataset """
 
-    tsv_path: Path = Path("/media/david/dataset/ScanNet/scannetv2-labels.combined.tsv")
+    tsv_path: str = "/home/david/datasets/scannet/scannetv2-labels.combined.tsv"
     """ Path to the tsv file """
 
-    downsampling_factor_dataset: int = 20
+    downsampling_factor_dataset: int = 2
     """ Downsampling factor for the dataset. Or how many images are there in between images. """
 
 
 class ScanNetBridge(BaseBridge):
     """
-        Bridge for Airsim
+        Bridge for Scannet-like data
     """
     def __init__(self, cfg: ScanNetBridgeConfig):
         """
@@ -116,7 +116,7 @@ class ScanNetBridge(BaseBridge):
         self.fy_color = self.fy_color*ratio_height
         self.camera_info = CameraData(cx=self.cx_color, cy=self.cy_color, fx=self.fx_color, fy=self.fy_color, width=self.width_color, height=self.height_color) 
         print("CAMERA INFO: ", self.camera_info)
-        self.camera_info_depth = CameraData(cx=self.cx_depth, cy=self.cy_depth, fx=self.fx_depth, fy=self.fy_depth, width=self.width_depth, height=self.height_depth)
+        self.depth_camera_info = CameraData(cx=self.cx_depth, cy=self.cy_depth, fx=self.fx_depth, fy=self.fy_depth, width=self.width_depth, height=self.height_depth)
         #######################################################
         label_mapping = pd.read_csv(self.cfg.tsv_path, sep='\t')
         NYU_classes = label_mapping['nyu40id'].values
@@ -161,7 +161,7 @@ class ScanNetBridge(BaseBridge):
             img_path = self.cfg.dataset_path / "color" / f"{self.seq_n}.jpg"
             # Open image as a np array
             img = (Image.open(img_path)).convert('RGB')
-            img = img.resize((self.camera_info_depth.width, self.camera_info_depth.height)) #Resize to match the depth image
+            img = img.resize((self.depth_camera_info.width, self.depth_camera_info.height)) #Resize to match the depth image
             # img = img.crop((80, 0, 560, 480)) #Crop the image to match the depth image
             data["rgb"] = np.array(img)
         
@@ -171,7 +171,7 @@ class ScanNetBridge(BaseBridge):
             label = np.array(Image.open(label_path))
             label = self.remap_ScanNet_to_13_classes(label)
             label[np.where(label == 255)] = 0 #Remove the white contour
-            label = cv2.resize(label, (self.camera_info_depth.width, self.camera_info_depth.height), interpolation = cv2.INTER_NEAREST)
+            label = cv2.resize(label, (self.depth_camera_info.width, self.depth_camera_info.height), interpolation = cv2.INTER_NEAREST)
             # label = label[:, 80:560]
             data["semantic_gt"] = label
 

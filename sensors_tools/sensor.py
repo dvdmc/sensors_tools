@@ -1,21 +1,16 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 import time
 import random  # Just for setting the random seed
-from typing import Literal, Optional, Union
+from typing import Optional
 
 import numpy as np
-from scipy.spatial.transform import Rotation
 from PIL import Image
-import torch  # Just for setting the random seed
 
 from sensors_tools.bridges import BridgeConfig, BridgeType, get_bridge
 
-from sensors_tools.inference.semantic import ClassicSemanticSegmentationConfig
-from sensors_tools.inference.open_clip_semantic import OpenClipSemanticSegmentationConfig
-from sensors_tools.inference.open_trident_semantic import OpenTridentSemanticSegmentationConfig
-from sensors_tools.inference import get_inference
-from sensors_tools.utils.semantics_utils import apply_label_map, get_label_mapper
+from sensors_tools.inference.semantic_segmentation import InferenceConfig 
+from sensors_tools.inference.semantic_segmentation import get_semantic_segmentation
 from sensors_tools.utils.random_utils import set_seed
 
 
@@ -31,12 +26,11 @@ class SensorConfig:
     bridge_type: BridgeType
     """ Type of bridge to be used """
 
-    gt_labels_mapper: Optional[str] = None
-    """ Name reference the label map for derived datasets. Example: coco_voc_2_pascal_8 """
+    # NOTE: The following is responsability of the bridge. Will be moved in the future
+    # gt_labels_mapper: Optional[str] = None
+    # """ Name reference the label map for derived datasets. Example: coco_voc_2_pascal_8 """
 
-    inference_cfg: Optional[Union[ClassicSemanticSegmentationConfig, OpenClipSemanticSegmentationConfig, OpenTridentSemanticSegmentationConfig]] = field(
-        default_factory=ClassicSemanticSegmentationConfig, metadata={"default": ClassicSemanticSegmentationConfig()}
-    )
+    inference_cfg: Optional[InferenceConfig] = None
     """ Inference configuration """
 
     save_inference: bool = False
@@ -59,8 +53,8 @@ class SemanticSegmentationSensor:
             assert self.cfg.inference_cfg is not None, "Inference cfg must be specified if semantic data is requested"
             # Dump inference_cfg
             print(self.cfg.inference_cfg)
-            self.inference_model = get_inference(self.cfg.inference_cfg)
-            self.inference_model.setup()
+            self.inference_model = get_semantic_segmentation(self.cfg.inference_cfg)
+
             if self.cfg.save_inference:
                 assert (
                     self.cfg.save_inference_path is not None
@@ -75,12 +69,12 @@ class SemanticSegmentationSensor:
         self.bridge = get_bridge(self.cfg.bridge_type, self.cfg.bridge_cfg)
         self.bridge.setup()
 
-        # If there is a GT label mapper, load it
-        print(self.cfg.gt_labels_mapper)
-        self.gt_labels_mapper = None
-        if self.cfg.gt_labels_mapper is not None:
-            print("Found labels mapper")
-            self.gt_labels_mapper = get_label_mapper(self.cfg.gt_labels_mapper)
+        # If there is a GT label mapper, load it. NOTE: This is now handled by the bridge TODO(dvdmc)
+        # print(self.cfg.gt_labels_mapper)
+        # self.gt_labels_mapper = None
+        # if self.cfg.gt_labels_mapper is not None:
+        #     print("Found labels mapper")
+        #     self.gt_labels_mapper = get_label_mapper(self.cfg.gt_labels_mapper)
 
 
     def get_data(self) -> Optional[dict]:
@@ -98,18 +92,19 @@ class SemanticSegmentationSensor:
             assert self.cfg.inference_cfg is not None, "Inference cfg must be specified if semantic data is requested"
 
             start = time.time()
-            out = self.inference_model.get_prediction(img)
+            semantics = self.inference_model.infer(img)
             print(f"Time to get prediction: {time.time() - start}")
 
-            if self.gt_labels_mapper is not None and "semantic_gt" in data:
-                data["semantic_gt"] = apply_label_map(data["semantic_gt"], self.gt_labels_mapper)
+            # NOTE: This is now handled by the bridge
+            # if self.gt_labels_mapper is not None and "semantic_gt" in data:
+            #     data["semantic_gt"] = apply_label_map(data["semantic_gt"], self.gt_labels_mapper)
 
-            data["semantic"] = out["probs"]
-            data["semantic_rgb"] = out["img_out"]
+            data["semantic"] = semantics
+            data["semantic_rgb"] = self.inference_model.to_rgb(semantics)
 
             if self.cfg.save_inference:
-                np.save(self.pred_path / f"{self.seq}.npy", out["probs"])
-                semantic_rgb = Image.fromarray(out["img_out"])
+                np.save(self.pred_path / f"{self.seq}.npy", data["semantic"])
+                semantic_rgb = Image.fromarray(data["semantic_rgb"])
                 semantic_rgb.save(self.pred_rgb_path / f"{self.seq}.png")
                 self.seq += 1
 

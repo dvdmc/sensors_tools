@@ -20,9 +20,8 @@
       semantic_config: [["Bottle", 5], ["bottle", 5], ["WineBottle", 5], ["palm", 16], ["plant", 16], ["Plant", 16], ["table", 11], ["Table", 11], ["Defenbakh", 11], ["flower", 16], ["Sofa", 18], ["screen", 20], ["monitor", 20], ["Chair", 9], ["chair", 9], ["Tablesofa", 11]]
 
     # Config for inference is in sensors_tools/inference/{inference_type}.py
+    inference_type: 'classic'
     inference:
       model_name: "deeplabv3_resnet50"
-      weights_path: "/media/david/models/DeepLab_66IoU_Drop03_weights.ckpt"
       num_classes: 21
       labels_name: "coco_voc"
-
