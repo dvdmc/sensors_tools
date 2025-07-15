@@ -68,7 +68,7 @@ class SemanticNode(Node):
             self.pub_camera_odometry = self.create_publisher(
                 Odometry, f"/{self.camera_name}/odom", 10
             )
-            self.pose_timer = self.create_timer(0.001, self.update_and_publish_odom)
+            # self.pose_timer = self.create_timer(0.001, self.update_and_publish_odom)
 
         if "rgb" in self.data_types:
             self.pub_rgb = self.create_publisher(
@@ -271,6 +271,7 @@ class SemanticNode(Node):
         Convert a ROS Odometry message to a ROS TransformStamped message
         """
         tf_msg = TransformStamped()
+        print(f"odom msg with timestamp: {odom_msg.header.stamp}")
         tf_msg.header.stamp = odom_msg.header.stamp
         tf_msg.header.frame_id = odom_msg.header.frame_id
         tf_msg.child_frame_id = odom_msg.child_frame_id
@@ -573,6 +574,7 @@ class SemanticNode(Node):
 
         # Publish data
         if "pose" in self.data_types:
+            print("Publishing pose.")
             translation, rotation = data["pose"]
             translation_ros, rotation_ros = self.pose_transformer.transform_function(
                 translation, rotation
@@ -583,6 +585,7 @@ class SemanticNode(Node):
             self.pub_camera_odometry.publish(odom_msg)
 
         if "rgb" in self.data_types:
+            print("Publishing rgb.")
             try:
                 rgb_msg = CvBridge().cv2_to_imgmsg(data["rgb"], "rgb8")
                 self.pub_rgb.publish(rgb_msg)
@@ -590,14 +593,15 @@ class SemanticNode(Node):
                 print(e)
 
         if "semantic" in self.data_types:
-            try:
-                semantic_gt_img = self.sensor.inference_model.to_rgb(
-                    data["semantic_gt"], feature_type="label"
-                )
-                semantic_gt_msg = CvBridge().cv2_to_imgmsg(semantic_gt_img, "rgb8")
-                self.pub_semantic_gt.publish(semantic_gt_msg)
-            except CvBridgeError as e:
-                print(e)
+            if "semantic_gt" in data and data["semantic_gt"] is not None:
+              try:
+                  semantic_gt_img = self.sensor.inference_model.to_rgb(
+                      data["semantic_gt"], feature_type="label"
+                  )
+                  semantic_gt_msg = CvBridge().cv2_to_imgmsg(semantic_gt_img, "rgb8")
+                  self.pub_semantic_gt.publish(semantic_gt_msg)
+              except CvBridgeError as e:
+                  print(e)
 
             semantic_msg = CvBridge().cv2_to_imgmsg(data["semantic_rgb"], "rgb8")
             self.pub_semantic.publish(semantic_msg)

@@ -10,7 +10,7 @@ requires-python=">=3.7.0"
 version = "0.1.0"
 dependencies=[
     "tqdm",
-    "numpy",
+    "numpy<2",
     "matplotlib",
     "Pillow",
     "torchtyping",
@@ -19,11 +19,13 @@ dependencies=[
     "ftfy",
     "gdown",
     "regex",
+    "pandas",
+    "poses_tools @ git+https://github.com/dvdmc/poses_tools.git@main",
     # Trident dependencies (check versions)
     "fsspec",
     "huggingface_hub",
     "nltk",
-    "opencv_python",
+    "opencv_python<=4.10.0.82",
     "openpyxl",
     "pycocotools",
     "safetensors",

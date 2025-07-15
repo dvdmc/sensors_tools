@@ -1,5 +1,8 @@
 /**:
   ros__parameters:
+
+    use_sim_time: true
+
     frequency: 10.0 # Frequency of the sensor in Hz. -1 means that we are using a service instead of a timer
     stride: 8 # Stride of the sensor for generating the pointcloud
     max_depth: 4.5 # Maximum distance of the sensor
@@ -20,21 +23,10 @@
       camera_info_topic: "/camera/camera/color/camera_info"
       depth_topic: "/camera/camera/depth/image_rect_raw"
 
-    # Config for inference is in sensors_tools/inference/{inference_type}.py
-    inference_type: 'open-seg'
+    # Config for inference is in sensors_tools/inference/semantic_segmentation/{semantic_segmentation_type}.py
+    semantic_segmentation_type: 'trident'
     inference:
-      model_name: "trident"
-      num_classes: 7
-      labels_name: "ade20k"
-      class_names: "none,ceiling,floor,wall,table,human,door"
-      # class_names: "none,floor,bycicle,cables"
-
+      semantic_dataset_type: "custom_set" # Number of classes 4 MAKE SURE TO SET IN MAP!
+      custom_set_labels: "none,floor,bycicle,cables"
+      # custom_set_labels: "none,ceiling,floor,wall,table,human,door"
       # Colors for reference: black, gray, pink-red, clear blue, brown, 
-
-    # inference_type: 'classic'
-    # inference:
-    #   model_name: "deeplabv3"
-    #   encoder_name: "resnet50"
-    #   # weights_path: "/home/david/research/APbayDL/preliminaryBayesian/models/VOC12_7_classes_Resnet50_Drop03_AllBlocks_epoch_60"
-    #   num_classes: 21
-    #   labels_name: "coco_voc"

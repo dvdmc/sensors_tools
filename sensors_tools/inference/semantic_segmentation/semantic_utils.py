@@ -115,6 +115,8 @@ def get_labels_color_map(semantic_dataset_type: SemanticDatasetType, **kwargs):
         return get_ade20k_color_map()
     elif semantic_dataset_type == "nyu40":
         return get_nyu40_color_map()
+    elif semantic_dataset_type == "custom_set":
+        return get_generic_color_map(kwargs['num_classes'])
     elif semantic_dataset_type == "feature_similarity":
         if 'num_classes' not in kwargs:
             raise ValueError("num_classes must be provided if semantic_dataset_type is CUSTOM_SET")

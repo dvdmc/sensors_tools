@@ -318,7 +318,9 @@ class ROSBridge(BaseBridge):
             if self.semantic_gt is not None:
                 data["semantic_gt"] = self.semantic_gt
             else:
-                data["semantic_gt"] = np.zeros((self.height, self.width))
+                data["semantic_gt"] = np.zeros((self.height, self.width)).astype(
+                    np.uint8
+                )
 
         # # If any of the data is not available, return None
         # if any([v is None for v in data.values()]):

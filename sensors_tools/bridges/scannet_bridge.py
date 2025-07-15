@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 import os
 from pathlib import Path
+import time
 from typing import List, Literal, Tuple
 
 from PIL import Image
@@ -33,7 +34,7 @@ class ScanNetBridgeConfig(BaseBridgeConfig):
     dataset_path: str = "/home/david/datasets/scannet"
     """ Path to the dataset """
 
-    tsv_path: str = "/home/david/datasets/scannet/scannetv2-labels.combined.tsv"
+    scannetv2_labels_combined_path: str = "/home/david/datasets/scannet/scannetv2-labels.combined.tsv"
     """ Path to the tsv file """
 
     downsampling_factor_dataset: int = 2
@@ -120,14 +121,19 @@ class ScanNetBridge(BaseBridge):
         print("CAMERA INFO: ", self.camera_info)
         self.depth_camera_info = CameraData(cx=self.cx_depth, cy=self.cy_depth, fx=self.fx_depth, fy=self.fy_depth, width=self.width_depth, height=self.height_depth)
         #######################################################
-        label_mapping = pd.read_csv(self.cfg.tsv_path, sep='\t')
-        NYU_classes = label_mapping['nyu40id'].values
-        id_classes = label_mapping['id'].values
-        self.remap_to_NYU_classes = {id_classes[i]: NYU_classes[i].astype(int) for i in range(len(NYU_classes))}
-        self.remapping_40_to_13_classes = {0: 0, 1:12, 2:5, 3:6, 4:1, 5:4, 6:9, 7:10, 8:12, 9:13, 10:6, 11:8, 12:6, 
-                                    13:13, 14:10, 15:6, 16:13, 17:6, 18:7, 19:7, 20:5, 21:7, 22:3, 23:2, 24:6,
-                                    25:11, 26:7, 27:7, 28:7, 29:7, 30:7, 31:7, 32:6, 33:7, 34:7, 35:7, 36:7,
-                                    37:7, 38:7, 39:6, 40:7}
+        label_mapping = pd.read_csv(self.cfg.scannetv2_labels_combined_path, sep='\t')
+        NYU_classes = np.array(label_mapping['nyu40id'].astype(int).values)
+        eigen_classes = np.array(label_mapping['eigen13id'].astype(int).values)
+        scannet_classes = np.array(label_mapping['id'].astype(int).values)
+        num_scannet_classes = scannet_classes.max() + 1
+        self.remap_to_NYU_classes = - np.ones(num_scannet_classes).astype(int)
+        self.remap_to_NYU_classes[0] = 0
+        self.remap_to_eigen_classes = - np.ones(num_scannet_classes).astype(int)
+        self.remap_to_eigen_classes[0] = 0
+        for scannet_id, nyu_id in zip(scannet_classes, NYU_classes):
+            self.remap_to_NYU_classes[scannet_id] = int(nyu_id)
+        for scannet_id, eigen_id in zip(scannet_classes, eigen_classes):
+            self.remap_to_eigen_classes[scannet_id] = int(eigen_id)
         
         # Init pose
         pose_path = self.cfg.dataset_path / "pose" / f"{self.seq_n}.txt"
@@ -137,19 +143,6 @@ class ScanNetBridge(BaseBridge):
         self.pose = (translation, rotation)
 
         self.ready = True
-
-    def remap_NYU_classes(self, label_40):
-        label_13 = np.zeros_like(label_40)
-        for key, value in self.remapping_40_to_13_classes.items():
-            label_13[np.where(label_40 == key)] = value
-        return label_13
-
-    def remap_ScanNet_to_13_classes(self, ScanNet_label):
-        label_40 = np.zeros_like(ScanNet_label)
-        for key, value in self.remap_to_NYU_classes.items():
-            label_40[np.where(ScanNet_label == key)] = value
-        label_13 = self.remap_NYU_classes(label_40)
-        return label_13
     
     def open_images(self):
         """
@@ -158,6 +151,7 @@ class ScanNetBridge(BaseBridge):
         """
         data = {}
 
+        start = time.time()
         if "rgb" in self.cfg.data_types:
             # Load RGB image
             img_path = self.cfg.dataset_path / "color" / f"{self.seq_n}.jpg"
@@ -166,17 +160,22 @@ class ScanNetBridge(BaseBridge):
             img = img.resize((self.depth_camera_info.width, self.depth_camera_info.height)) #Resize to match the depth image
             # img = img.crop((80, 0, 560, 480)) #Crop the image to match the depth image
             data["rgb"] = np.array(img)
-        
+            print(f"Time to load RGB: {time.time() - start}")
+
+        start = time.time()
         if "semantic" in self.cfg.data_types:
             # Load GT label
             label_path = self.cfg.dataset_path / "label" / f"{self.seq_n}.png"
             label = np.array(Image.open(label_path))
-            label = self.remap_ScanNet_to_13_classes(label)
+            label = self.remap_to_NYU_classes[label]
+            print(f"LABEL: {np.unique(label)}")
             label[np.where(label == 255)] = 0 #Remove the white contour
             label = cv2.resize(label, (self.depth_camera_info.width, self.depth_camera_info.height), interpolation = cv2.INTER_NEAREST)
             # label = label[:, 80:560]
             data["semantic_gt"] = label
+            print(f"Time to load semantic: {time.time() - start}")
 
+        start = time.time()
         if "depth" in self.cfg.data_types:
             # Load depth image (depth frames as 16-bit pngs (depth shift 1000))
             depth_path = self.cfg.dataset_path / "depth" / f"{self.seq_n}.png"
@@ -184,7 +183,7 @@ class ScanNetBridge(BaseBridge):
             depth = (depth/1000).astype(np.float32)
             # depth = depth[:, 80:560]
             data["depth"] = depth
-
+            print(f"Time to load depth: {time.time() - start}")
         return data
 
     

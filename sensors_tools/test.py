@@ -10,12 +10,12 @@ from matplotlib import pyplot as plt
 import numpy as np
 from sensor import SensorConfig, SemanticSegmentationSensor
 from sensors_tools.bridges.test_bridge import TestBridgeConfig
-from sensors_tools.inference.semantic import ClassicSemanticSegmentationConfig
+from sensors_tools.inference.semantic_segmentation import SemanticSegmentationDeepLabV3Config
 
 if __name__ == '__main__':
     # Setup the sensor
     bridge_cfg = TestBridgeConfig(data_types=["rgb", "semantic", "depth", "pose"], dataset_path=Path("./bridges/test_data/dataset/"), width=512, height=512)
-    sem_cfg = ClassicSemanticSegmentationConfig(model_name = "deeplabv3_resnet50", num_classes=21)
+    sem_cfg = SemanticSegmentationDeepLabV3Config(semantic_feature_type="probability_vector", encoder_name="resnet50", semantic_dataset_type="voc")
     cfg = SensorConfig(
         bridge_cfg = bridge_cfg,
         bridge_type = "test",

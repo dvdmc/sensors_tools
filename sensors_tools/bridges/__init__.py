@@ -22,9 +22,9 @@ BridgeConfig = Union[
     "ScanNetBridgeConfig", "ScanNetVOCBridgeConfig", "TestBridgeConfig", "AirsimBridgeConfig", "ROSBridgeConfig", "HabitatBridgeConfig"
 ]
 
-BridgeType = Literal["airsim", "ros", "scannet", "scannet_voc", "test", "habitat"]
+BridgeType = Literal["airsim", "ros", "scannet", "scannet_voc", "test", "folder", "habitat"]
 
-ControllableBridges = ["scannet", "scannet_voc", "test", "habitat"]  # Bridges that can be controlled by the sensor
+ControllableBridges = ["scannet", "scannet_voc", "test", "folder", "habitat"]  # Bridges that can be controlled by the sensor
 
 Bridges = Union["ScanNetBridge", "ScanNetVOCBridge", "TestBridge", "AirsimBridge", "ROSBridge", "HabitatBridge"]
 
@@ -48,6 +48,10 @@ def get_bridge_config(bridge_type: BridgeType):
         from .ros_bridge import ROSBridgeConfig
 
         return ROSBridgeConfig
+    elif bridge_type == "folder":
+        from .folder_bridge import FolderBridgeConfig
+
+        return FolderBridgeConfig
     elif bridge_type == "test":
         from .test_bridge import TestBridgeConfig
 
@@ -86,6 +90,11 @@ def get_bridge(bridge_type: BridgeType, bridge_cfg: BridgeConfig) -> Bridges:
 
         assert isinstance(bridge_cfg, ROSBridgeConfig), "Bridge cfg must be of type ROSBridgeConfig"
         return ROSBridge(bridge_cfg)
+    elif bridge_type == "folder":
+        from .folder_bridge import FolderBridge, FolderBridgeConfig
+
+        assert isinstance(bridge_cfg, FolderBridgeConfig), "Bridge cfg must be of type FolderBridgeConfig"
+        return FolderBridge(bridge_cfg)
     elif bridge_type == "test":
         from .test_bridge import TestBridge, TestBridgeConfig
 

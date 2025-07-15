@@ -1,6 +1,9 @@
 /**:
   ros__parameters:
-    frequency: 10.0 # Frequency of the sensor in Hz. -1 means that we are using a service instead of a timer
+
+    use_sim_time: false
+
+    frequency: 20.0 # Frequency of the sensor in Hz. -1 means that we are using a service instead of a timer
     stride: 8 # Stride of the sensor for generating the pointcloud
     max_depth: 4.5 # Maximum distance of the sensor
     publish_freespace_point_cloud: true
@@ -14,24 +17,14 @@
     bridge:
       bridge_type: 'scannet' # Source of the sensor. It can be 'airsim' or 'ros'
       automove: true
+      downsampling_factor_dataset: 4
       data_types: ['rgb', 'depth', 'semantic', 'pose'] # Data types to be published. It can be 'rgb', 'depth', 'semantic', 'pose'
       origin_tf: "map"
       poses_tf: "camera_link"
       dataset_path: '/home/david/datasets/scannet/scans/scene0568_00'
 
 
-    # Config for inference is in sensors_tools/inference/{semantic_segmentation_type}.py
+    # Config for inference is in sensors_tools/inference/semantic_segmentation/{semantic_segmentation_type}.py
     semantic_segmentation_type: 'segformer'
     inference:
-      semantic_dataset_type: "ade20k"
-      # class_names: "none,floor,bycicle,cables"
-
-      # Colors for reference: black, gray, pink-red, clear blue, brown, 
-
-    # semantic_segmentation_type: 'classic'
-    # inference:
-    #   model_name: "deeplabv3" # Type of inference. It can be 'classic' or 'mcd'
-    #   encoder_name: "resnet50"
-    #   # weights_path: "/home/david/research/APbayDL/preliminaryBayesian/models/VOC12_7_classes_Resnet50_Drop03_AllBlocks_epoch_60"
-    #   num_classes: 21
-    #   labels_name: "coco_voc"
+      semantic_dataset_type: "ade20k" # Number of classes 150

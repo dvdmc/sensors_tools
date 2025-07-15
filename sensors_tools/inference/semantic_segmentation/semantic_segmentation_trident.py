@@ -56,7 +56,7 @@ class SemanticSegmentationTrident(SemanticSegmentationBase):
         self,
         cfg: SemanticSegmentationTridentConfig,
     ):
-        device = self.init_device(cfg.device)
+        self.device = self.init_device(cfg.device)
 
         self.cfg = cfg
 
@@ -79,7 +79,7 @@ class SemanticSegmentationTrident(SemanticSegmentationBase):
             self.cfg.sam_checkpoint_path,
             self.cfg.sam_model_type,
         )
-        self.softmax = torch.nn.Softmax(dim=0).to(device)
+        self.softmax = torch.nn.Softmax(dim=0).to(self.device)
 
         # Config the dataset type
         if self.cfg.semantic_dataset_type == "custom_set":
@@ -96,7 +96,7 @@ class SemanticSegmentationTrident(SemanticSegmentationBase):
                 self.cfg.semantic_dataset_type
             )
 
-        super().__init__(model, transform, device, self.cfg.semantic_feature_type)
+        super().__init__(model, transform, self.device, self.cfg.semantic_feature_type)
 
     def init_model(
         self,
@@ -165,7 +165,7 @@ class SemanticSegmentationTrident(SemanticSegmentationBase):
 
         pred, logits = self.model.predict(image_pil, img_t)
         probs = self.softmax(logits)
-        probs = recover_size(probs[0])
+        probs = recover_size(probs)
         
         if self.semantic_feature_type == "probability_vector":
             self.semantics = probs.permute(1, 2, 0).cpu().numpy()
@@ -180,7 +180,6 @@ class SemanticSegmentationTrident(SemanticSegmentationBase):
     def to_rgb(self, semantics, bgr=False, feature_type=None):
         
         semantic_feature_type = feature_type if feature_type is not None else self.semantic_feature_type
-
         if semantic_feature_type == "label":
             return labels_to_image(semantics, self.semantics_color_map, bgr=bgr)
         elif semantic_feature_type == "probability_vector":
