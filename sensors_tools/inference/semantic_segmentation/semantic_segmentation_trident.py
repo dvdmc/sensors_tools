@@ -45,6 +45,9 @@ class SemanticSegmentationTridentConfig(SemanticSegmentationBaseConfig):
     coarse_threshold: float = 0.2
     """ Threshold for the SAM refinement """
 
+    colors: Optional[List[List[int]]] = None
+    """ Optional colormap to use """
+
 
 class SemanticSegmentationTrident(SemanticSegmentationBase):
     supported_feature_types = [
@@ -73,7 +76,6 @@ class SemanticSegmentationTrident(SemanticSegmentationBase):
             self.label_names = get_labels_name(self.cfg.semantic_dataset_type)
 
         model, transform = self.init_model(
-            self.cfg.semantic_dataset_type,
             self.label_names,
             self.cfg.coarse_threshold,
             self.cfg.sam_checkpoint_path,
@@ -83,14 +85,20 @@ class SemanticSegmentationTrident(SemanticSegmentationBase):
 
         # Config the dataset type
         if self.cfg.semantic_dataset_type == "custom_set":
-            if self.cfg.custom_set_labels is None:
+            if self.label_names is None:
                 raise ValueError(
                     "custom_set_labels must be provided if semantic_dataset_type is CUSTOM_SET"
                 )
             self.semantics_color_map = get_labels_color_map(
                 self.cfg.semantic_dataset_type,
-                num_classes=len(self.cfg.custom_set_labels),
+                num_classes=len(self.label_names),
             )
+            if self.cfg.colors is not None:
+                if len(self.cfg.colors) != len(self.label_names):
+                    raise ValueError(
+                        "colors must have the same length as custom_set_labels"
+                    )
+                self.semantics_color_map = self.cfg.colors
         else:
             self.semantics_color_map = get_labels_color_map(
                 self.cfg.semantic_dataset_type
@@ -100,7 +108,6 @@ class SemanticSegmentationTrident(SemanticSegmentationBase):
 
     def init_model(
         self,
-        semantic_dataset_type,
         label_names,
         coarse_threshold,
         sam_checkpoint_path,
@@ -177,15 +184,16 @@ class SemanticSegmentationTrident(SemanticSegmentationBase):
         
         return self.semantics
 
-    def to_rgb(self, semantics, bgr=False, feature_type=None):
+    def to_rgb(self, semantics, bgr=False, feature_type=None, rgb_image=None, overlay=False):
         
         semantic_feature_type = feature_type if feature_type is not None else self.semantic_feature_type
         if semantic_feature_type == "label":
-            return labels_to_image(semantics, self.semantics_color_map, bgr=bgr)
+            return labels_to_image(semantics, self.semantics_color_map, bgr=bgr, overlay=overlay, rgb_image=rgb_image)
         elif semantic_feature_type == "probability_vector":
+            print(f"LABELS: {np.unique(np.argmax(semantics, axis=-1))}")
             return labels_to_image(
-                np.argmax(semantics, axis=-1), self.semantics_color_map, bgr=bgr
-            )
+                np.argmax(semantics, axis=-1), self.semantics_color_map, bgr=bgr, overlay=overlay, rgb_image=rgb_image)
+            
         
     def get_semantic_dimensions(self):
         if self.semantic_feature_type == "label":

@@ -41,6 +41,9 @@ class SensorConfig:
     save_inference: bool = False
     """ Whether to save the inference results """
 
+    overlay: bool = False
+    """ Whether to overlay the inference results on the rgb image """
+
     save_inference_path: Optional[Path] = None
     """ Path to save the inference results """
 
@@ -61,6 +64,7 @@ class SemanticSegmentationSensor:
             self.inference_model = get_semantic_segmentation(self.cfg.inference_type, self.cfg.inference_cfg)
 
             if self.cfg.save_inference:
+                print("Saving inference results")
                 assert (
                     self.cfg.save_inference_path is not None
                 ), "save_inference_path must be specified if save_inference is True"
@@ -68,6 +72,8 @@ class SemanticSegmentationSensor:
                 self.pred_rgb_path = self.cfg.save_inference_path / "pred_rgb"
                 self.pred_path.mkdir(parents=True, exist_ok=True)
                 self.pred_rgb_path.mkdir(parents=True, exist_ok=True)
+                print(f"Results will be saved in {self.cfg.save_inference_path}")
+                print(f"Pred rgb will be saved in {self.pred_rgb_path}")
 
         # Setup the bridge
         print("Setting up the bridge")
@@ -105,9 +111,10 @@ class SemanticSegmentationSensor:
             #     data["semantic_gt"] = apply_label_map(data["semantic_gt"], self.gt_labels_mapper)
 
             data["semantic"] = semantics
-            data["semantic_rgb"] = self.inference_model.to_rgb(semantics)
+            data["semantic_rgb"] = self.inference_model.to_rgb(semantics, overlay=self.cfg.overlay, rgb_image=img)
 
             if self.cfg.save_inference:
+                print(f"Saving: {self.pred_rgb_path}/{self.seq}.png")
                 np.save(self.pred_path / f"{self.seq}.npy", data["semantic"])
                 semantic_rgb = Image.fromarray(data["semantic_rgb"])
                 semantic_rgb.save(self.pred_rgb_path / f"{self.seq}.png")

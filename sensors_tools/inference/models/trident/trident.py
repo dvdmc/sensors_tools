@@ -306,7 +306,6 @@ class Trident(nn.Module):
 
 def get_cls_idx(class_set):
     num_cls = len(class_set)
-
     class_names, class_indices = [], []
     for idx in range(num_cls):
         names_i = class_set[idx].split('; ')

@@ -11,7 +11,7 @@ import cv_bridge
 from sensor_msgs.msg import Image as RosImage
 from sensor_msgs.msg import CameraInfo
 import message_filters
-
+from scipy.ndimage import median_filter
 from PIL import Image
 import numpy as np
 from scipy.spatial.transform import Rotation
@@ -240,14 +240,23 @@ class ROSBridge(BaseBridge):
         Callback for the depth image
         """
         depth = (
-            self.cv_bridge.imgmsg_to_cv2(data, "passthrough").astype(np.float32)
-            / 1000.0
+            self.cv_bridge.imgmsg_to_cv2(data, "passthrough").astype(np.float32) / 1000.0
         )  # Convert to meters
         self.depth_timestamp = data.header.stamp
+
+        # Count how many pixels are zero
+        zero_ratio = np.count_nonzero(depth == 0) / depth.size
+
+        if zero_ratio > 0.7:
+            depth[:,:] = 0.0  # Zero out the entire image
+
+        # Apply median filter directly on float32 array
+        depth_filtered = median_filter(depth, size=7)  # You can change size to 3, 7, etc.
+            
         # Resize depth to RGB resolution if available
         if self.has_camera_info and self.has_depth_camera_info:
             depth_resized = cv2.resize(
-                depth, (self.width, self.height), interpolation=cv2.INTER_NEAREST
+                depth_filtered, (self.width, self.height), interpolation=cv2.INTER_NEAREST
             )
 
             # Calculate scaling factors
@@ -270,7 +279,7 @@ class ROSBridge(BaseBridge):
             )
             self.depth = depth_resized
         else:
-            self.depth = depth
+            self.depth = depth_filtered
 
     def get_data(self) -> dict:
         """

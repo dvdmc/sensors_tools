@@ -547,7 +547,7 @@ class SemanticNode(Node):
                     self.depth_camera_info = self.sensor.bridge.depth_camera_info
                 else:
                     self.get_logger().info(
-                        f"ROS bridge waiting for depth camera info on: {self.sensor.bridge.cfg.depth_camera_info_topic}"
+                        f"ROS bridge waiting for depth camera info on: {self.sensor.bridge.cfg.camera_info_topic}"
                     )
                     return False
 

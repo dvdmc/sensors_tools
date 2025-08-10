@@ -29,6 +29,8 @@ class FolderBridgeConfig(BaseBridgeConfig):
     data_types: List[FolderSensorDataTypes] = field(
         default_factory=list, metadata={"default": ["rgb"]}
     )
+    width: int = 2000
+    height: int = 1500
     """ Data types to query """
 
 
@@ -48,6 +50,7 @@ class FolderBridge(BaseBridge):
         # Data acquisition configuration
         print("Dataset path: ", self.cfg.dataset_path)
         self.files = os.listdir(self.cfg.dataset_path)
+        self.files.sort()
         self.data_length = len(self.files)
         self.seq_n = 0
         print("Sequence length: ", self.data_length)
@@ -66,6 +69,7 @@ class FolderBridge(BaseBridge):
               img_path = self.cfg.dataset_path / self.files[self.seq_n]
               # Open image as a np array
               img = (Image.open(img_path)).convert('RGB')
+              img = img.resize((self.cfg.width, self.cfg.height))
               data["rgb"] = np.array(img)
           else:
               print("No more files to load")

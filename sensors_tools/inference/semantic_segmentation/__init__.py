@@ -69,4 +69,4 @@ def get_semantic_segmentation(inference_type: SemanticSegmentationMethods, infer
 
         return SemanticSegmentationTrident(inference_cfg)
     else:
-        raise NotImplementedError(f"Inference type {inference_cfg.inference_type} not implemented")
+        raise NotImplementedError(f"Inference type {inference_type} not implemented")

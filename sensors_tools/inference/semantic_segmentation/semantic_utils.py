@@ -5,10 +5,10 @@ import cv2
 
 from .semantic_types import SemanticDatasetType
 
-from .semantic_labels import get_ade20k_color_map, get_cityscapes_color_map, get_nyu40_color_map, get_voc_color_map, get_generic_color_map
+from .semantic_labels import get_ade20k_color_map, get_cityscapes_color_map, get_coco_color_map, get_nyu40_color_map, get_voc_color_map, get_generic_color_map
 from .semantic_labels import get_ade20k_labels, get_cityscapes_labels, get_nyu40_labels, get_voc_labels
 
-def similarity_heatmap_image(sim_map, colormap=cv2.COLORMAP_JET, sim_scale=1.0, bgr=False):
+def similarity_heatmap_image(sim_map, colormap=cv2.COLORMAP_JET, sim_scale=1.0, bgr=False, overlay=False, alpha=0.5, rgb_image=None):
     """
     Transforms a similarity map to a visual RGB image using a colormap.
 
@@ -27,6 +27,20 @@ def similarity_heatmap_image(sim_map, colormap=cv2.COLORMAP_JET, sim_scale=1.0, 
     sim_color = cv2.applyColorMap(sim_map, colormap)
     if bgr:
         sim_color = cv2.cvtColor(sim_color, cv2.COLOR_BGR2RGB)
+
+    # Overlay if requested
+    if overlay:
+        if rgb_image is None:
+            raise ValueError("rgb_image must be provided when overlay=True")
+        if rgb_image.shape[:2] != sim_color.shape[:2]:
+            raise ValueError("rgb_image and sim_map must have the same spatial dimensions")
+
+        # Convert both to float for blending
+        sim_color = sim_color.astype(np.float32)
+        rgb_image = rgb_image.astype(np.float32)
+        blended = (alpha * sim_color + (1 - alpha) * rgb_image).astype(np.uint8)
+        return blended
+    
     return sim_color
 
 
@@ -51,7 +65,7 @@ def similarity_heatmap_point(sim_point, colormap=cv2.COLORMAP_JET, sim_scale=1.0
 
 # create a scaled image of uint8 from a image of semantics
 def labels_to_image(
-    label_img, semantics_color_map, bgr=False, ignore_labels=[], rgb_image=None
+    label_img, semantics_color_map, bgr=False, ignore_labels=[], overlay=False, alpha=0.5, rgb_image=None
 ):
     """
     Converts a class label image to an RGB image.
@@ -67,12 +81,18 @@ def labels_to_image(
 
     rgb_output = semantics_color_map[label_img]
 
-    if len(ignore_labels) > 0:
+    if len(ignore_labels) > 0 or overlay:
         if rgb_image is None:
-            raise ValueError("rgb_image must be provided if ignore_labels is not empty")
+            raise ValueError("rgb_image must be provided if ignore_labels or overlay is not empty")
         else:
             mask = np.isin(label_img, ignore_labels)
             rgb_output[mask] = rgb_image[mask]
+            if overlay:
+                # Convert to float32 for blending
+                rgb_output = rgb_output.astype(np.float32)
+                rgb_image = rgb_image.astype(np.float32)
+                rgb_output = (alpha * rgb_output + (1 - alpha) * rgb_image).astype(np.uint8)
+
     return rgb_output
 
 
@@ -116,7 +136,7 @@ def get_labels_color_map(semantic_dataset_type: SemanticDatasetType, **kwargs):
     elif semantic_dataset_type == "nyu40":
         return get_nyu40_color_map()
     elif semantic_dataset_type == "custom_set":
-        return get_generic_color_map(kwargs['num_classes'])
+        return get_coco_color_map(kwargs['num_classes'])
     elif semantic_dataset_type == "feature_similarity":
         if 'num_classes' not in kwargs:
             raise ValueError("num_classes must be provided if semantic_dataset_type is CUSTOM_SET")
