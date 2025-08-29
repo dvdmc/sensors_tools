@@ -23,7 +23,7 @@ class FolderBridgeConfig(BaseBridgeConfig):
     """
         Configuration class for FolderBridge
     """
-    dataset_path: Path = Path("/home/david/datasets/folder")
+    dataset_path: Path = Path("/root/datasets/folder")
     """ Path to the dataset """
     
     data_types: List[FolderSensorDataTypes] = field(

@@ -14,7 +14,7 @@ from sensors_tools.bridges.scannet_bridge import ScanNetBridge, ScanNetBridgeCon
 if __name__ == '__main__':
     config = ScanNetBridgeConfig()
     config.data_types = ["rgb", "depth", "semantic", "pose"]
-    config.dataset_path = Path("/home/david/research/APbayDL/dataset/scene0005_00")
+    config.dataset_path = Path("/root/datasets/scannet/scene0005_00")
     config.width = 512
     config.height = 512
 

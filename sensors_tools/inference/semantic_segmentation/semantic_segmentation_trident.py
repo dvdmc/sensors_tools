@@ -36,7 +36,7 @@ class SemanticSegmentationTridentConfig(SemanticSegmentationBaseConfig):
     semantic_feature_type: SemanticFeatureType = "probability_vector"
     """ Semantic feature type """
 
-    sam_checkpoint_path: str = "/home/david/git/Trident/sam_vit_b_01ec64.pth"
+    sam_checkpoint_path: str = "/root/checkpoints/Trident/sam_vit_b_01ec64.pth"
     """ Path to the SAM checkpoint """
 
     sam_model_type: str = "vit_b"

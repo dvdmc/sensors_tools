@@ -19,7 +19,7 @@ if __name__ == "__main__":
     # Setup the sensor
     bridge_cfg = FolderBridgeConfig(
         data_types=["rgb", "semantic"],
-        dataset_path=Path("/home/david/datasets/folder/"),
+        dataset_path=Path("/root/datasets/folder/"),
     )
     sem_cfg = SemanticSegmentationTridentConfig(
         semantic_feature_type="probability_vector",
@@ -43,7 +43,7 @@ if __name__ == "__main__":
         inference_cfg=sem_cfg,
         save_inference=True,
         overlay=True,
-        save_inference_path=Path("/home/david/datasets/folder/out/"),
+        save_inference_path=Path("/root/datasets/folder/out/"),
     )
     # Show if cuda is available
     print(f"Cuda available: {torch.cuda.is_available()}")

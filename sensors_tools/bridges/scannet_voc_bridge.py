@@ -30,7 +30,7 @@ class ScanNetVOCBridgeConfig(BaseBridgeConfig):
     data_types: List[ScanNetSensorDataTypes] = field(default_factory=list, metadata={"default": ["rgb", "poses"]})
     """ Data types to query """
 
-    dataset_path: Path = Path("/media/david/dataset/ScanNet")
+    dataset_path: Path = Path("/root/dataset/ScanNet")
     """ Path to the dataset """
 
     downsampling_factor_dataset: int = 2

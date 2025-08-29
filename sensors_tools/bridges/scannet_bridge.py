@@ -31,10 +31,10 @@ class ScanNetBridgeConfig(BaseBridgeConfig):
     data_types: List[ScanNetSensorDataTypes] = field(default_factory=list, metadata={"default": ["rgb", "poses"]})
     """ Data types to query """
 
-    dataset_path: str = "/home/david/datasets/scannet"
+    dataset_path: str = "/root/datasets/scannet"
     """ Path to the dataset """
 
-    scannetv2_labels_combined_path: str = "/home/david/datasets/scannet/scannetv2-labels.combined.tsv"
+    scannetv2_labels_combined_path: str = "/root/datasets/scannet/scannetv2-labels.combined.tsv"
     """ Path to the tsv file """
 
     downsampling_factor_dataset: int = 2
