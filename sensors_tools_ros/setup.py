@@ -16,12 +16,12 @@ setup(
     ],
     install_requires=["setuptools"],
     zip_safe=True,
-    maintainer="David Morilla-Cabello",
-    maintainer_email="davidmc@unizar.es",
+    maintainer="dvdmc@dvdmc.com",
+    maintainer_email="dvdmc@dvdmc.com",
     description="Sensors tools for conversion and inference",
     license="BSD",
     extras_require={
-    "test": ["pytest"],
+        "test": ["pytest"],
     },
     entry_points={
         "console_scripts": [
